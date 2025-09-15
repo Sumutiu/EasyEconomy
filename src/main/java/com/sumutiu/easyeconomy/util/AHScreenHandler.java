@@ -147,9 +147,10 @@ public class AHScreenHandler extends ScreenHandler {
                 if (!buyer.getInventory().insertStack(purchased.copy())) {
                     buyer.dropItem(purchased.copy(), false);
                 }
+                buyer.playerScreenHandler.sendContentUpdates();
 
                 List<AHStorage.AHListing> sellerListings = AHStorage.loadListings(listing.seller);
-                sellerListings.remove(listing);
+                sellerListings.removeIf(l -> l.timestamp == listing.timestamp && l.seller.equals(listing.seller));
                 AHStorage.saveListings(listing.seller, sellerListings);
                 listings.remove(confirmSlot);
 
