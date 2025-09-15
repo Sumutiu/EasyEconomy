@@ -64,7 +64,8 @@ public class AHCommand {
                 itemId, // store proper identifier like "minecraft:white_wool"
                 qty,
                 price,
-                player.getUuid()
+                player.getUuid(),
+                player.getName().getString()
         );
 
         var listings = AHStorage.loadListings(player.getUuid());

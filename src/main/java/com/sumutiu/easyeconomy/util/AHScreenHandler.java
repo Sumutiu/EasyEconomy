@@ -62,7 +62,7 @@ public class AHScreenHandler extends ScreenHandler {
                 stack = AHStorageHelper.fromListing(listing);
                 if (stack == null) stack = ItemStack.EMPTY;
 
-                String sellerName = listing.seller != null ? listing.seller.toString() : "Unknown";
+                String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
                 String date = sdf.format(new Date(listing.timestamp));
 
                 Text customName = Text.literal(
@@ -107,6 +107,19 @@ public class AHScreenHandler extends ScreenHandler {
         sendContentUpdates();
     }
 
+    private boolean hasInventorySpace(ServerPlayerEntity player, ItemStack stack) {
+        if (player.getInventory().getEmptySlot() != -1) {
+            return true;
+        }
+        for (int i = 0; i < 36; ++i) { // Main inventory size
+            ItemStack slotStack = player.getInventory().getStack(i);
+            if (ItemStack.areItemsEqual(slotStack, stack) && slotStack.isStackable() && slotStack.getCount() < slotStack.getMaxCount()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (actionType == SlotActionType.QUICK_MOVE) {
@@ -125,6 +138,12 @@ public class AHScreenHandler extends ScreenHandler {
                 ItemStack purchased = AHStorageHelper.fromListing(listing);
                 if (purchased == null || purchased.isEmpty()) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Error: Could not retrieve item from listing.");
+                    drawListings();
+                    return;
+                }
+
+                if (!hasInventorySpace(buyer, purchased)) {
+                    EasyEconomyMessages.PrivateMessage(buyer, "Not enough inventory space to purchase this item.");
                     drawListings();
                     return;
                 }
@@ -157,7 +176,7 @@ public class AHScreenHandler extends ScreenHandler {
                 EasyEconomyMessages.PrivateMessage(
                         buyer,
                         "Bought " + purchased.getCount() + " x " + purchased.getItem().getName(purchased).getString()
-                                + " for " + listing.price + " diamonds from " + listing.seller
+                                + " for " + listing.price + " diamonds from " + listing.sellerName
                 );
 
                 drawListings();
