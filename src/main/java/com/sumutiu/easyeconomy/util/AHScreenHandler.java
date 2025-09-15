@@ -109,19 +109,6 @@ public class AHScreenHandler extends ScreenHandler {
         sendContentUpdates();
     }
 
-    private boolean hasInventorySpace(ServerPlayerEntity player, ItemStack stack) {
-        if (player.getInventory().getEmptySlot() != -1) {
-            return true;
-        }
-        for (int i = 0; i < 36; ++i) { // Main inventory size
-            ItemStack slotStack = player.getInventory().getStack(i);
-            if (ItemStack.areItemsEqual(slotStack, stack) && slotStack.isStackable() && slotStack.getCount() < slotStack.getMaxCount()) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (actionType == SlotActionType.QUICK_MOVE) {
@@ -144,7 +131,7 @@ public class AHScreenHandler extends ScreenHandler {
                     return;
                 }
 
-                if (!hasInventorySpace(buyer, purchased)) {
+                if (!InventoryUtil.hasInventorySpace(buyer, purchased)) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Not enough inventory space to purchase this item.");
                     drawListings();
                     return;

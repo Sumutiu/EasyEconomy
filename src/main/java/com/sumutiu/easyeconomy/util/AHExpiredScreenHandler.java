@@ -33,16 +33,27 @@ public class AHExpiredScreenHandler extends ScreenHandler {
         AHStorage.AHListing listing = expiredListings.get(slot);
         ItemStack stack = AHStorageHelper.fromListing(listing);
 
-        if (!player.getInventory().insertStack(stack)) {
-            player.dropItem(stack, false);
+        if (stack == null || stack.isEmpty()) {
+            EasyEconomyMessages.PrivateMessage(player, "Error: Could not retrieve item from listing.");
+            return;
         }
+
+        if (!InventoryUtil.hasInventorySpace(player, stack)) {
+            EasyEconomyMessages.PrivateMessage(player, "Not enough inventory space to claim this item.");
+            return;
+        }
+
+        if (!player.getInventory().insertStack(stack.copy())) {
+            player.dropItem(stack.copy(), false);
+        }
+        player.playerScreenHandler.sendContentUpdates();
 
         // Remove listing from memory
         expiredListings.remove(listing);
 
         // Remove listing from player's file
         List<AHStorage.AHListing> allListings = AHStorage.loadListings(player.getUuid());
-        allListings.remove(listing);
+        allListings.removeIf(l -> l.timestamp == listing.timestamp && l.seller.equals(listing.seller));
         AHStorage.saveListings(player.getUuid(), allListings);
 
         // Null-safe item name retrieval
