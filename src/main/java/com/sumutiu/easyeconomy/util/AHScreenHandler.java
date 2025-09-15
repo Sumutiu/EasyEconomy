@@ -13,6 +13,8 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.component.type.LoreComponent;
+import java.util.ArrayList;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -65,15 +67,15 @@ public class AHScreenHandler extends ScreenHandler {
                 String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
                 String date = sdf.format(new Date(listing.timestamp));
 
-                Text customName = Text.literal(
-                        stack.getCount() + " x " +
-                                stack.getItem().getName(stack).getString() +
-                                " | Seller: " + sellerName +
-                                " | Listed: " + date +
-                                " | Price: " + listing.price + " diamonds"
-                );
+                Text itemName = Text.literal(stack.getCount() + " x " + stack.getItem().getName(stack).getString());
+                stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, itemName);
 
-                stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, customName);
+                List<Text> loreLines = new ArrayList<>();
+                loreLines.add(Text.literal("Seller: " + sellerName));
+                loreLines.add(Text.literal("Listed: " + date));
+                loreLines.add(Text.literal("Price: " + listing.price + " diamonds"));
+
+                stack.set(net.minecraft.component.DataComponentTypes.LORE, new LoreComponent(loreLines));
             } else {
                 stack = ItemStack.EMPTY;
             }
