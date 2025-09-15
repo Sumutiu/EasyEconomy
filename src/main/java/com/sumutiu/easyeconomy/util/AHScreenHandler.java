@@ -109,6 +109,10 @@ public class AHScreenHandler extends ScreenHandler {
 
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
+        if (actionType == SlotActionType.QUICK_MOVE) {
+            return;
+        }
+
         if (!(player instanceof ServerPlayerEntity buyer)) {
             return;
         }
@@ -117,6 +121,13 @@ public class AHScreenHandler extends ScreenHandler {
             if (slotIndex == 22) { // Confirm
                 inConfirmation = false;
                 AHStorage.AHListing listing = listings.get(confirmSlot);
+
+                ItemStack purchased = AHStorageHelper.fromListing(listing);
+                if (purchased == null || purchased.isEmpty()) {
+                    EasyEconomyMessages.PrivateMessage(buyer, "Error: Could not retrieve item from listing.");
+                    drawListings();
+                    return;
+                }
 
                 long balance = BankStorage.getBalance(buyer.getUuid());
                 if (balance < listing.price) {
@@ -132,11 +143,9 @@ public class AHScreenHandler extends ScreenHandler {
                 }
 
                 BankStorage.addBalance(listing.seller, listing.price);
-                ItemStack purchased = AHStorageHelper.fromListing(listing);
-                if (purchased != null && !purchased.isEmpty()) {
-                    if (!buyer.getInventory().insertStack(purchased)) {
-                        buyer.dropItem(purchased, false);
-                    }
+
+                if (!buyer.getInventory().insertStack(purchased.copy())) {
+                    buyer.dropItem(purchased.copy(), false);
                 }
 
                 List<AHStorage.AHListing> sellerListings = AHStorage.loadListings(listing.seller);
