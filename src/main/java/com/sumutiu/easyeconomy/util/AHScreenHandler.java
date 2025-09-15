@@ -6,6 +6,7 @@ import com.sumutiu.easyeconomy.storage.BankStorage;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
@@ -25,15 +26,35 @@ public class AHScreenHandler extends ScreenHandler {
 
     private final Inventory inventory;
     private final List<AHStorage.AHListing> listings;
+    private boolean inConfirmation = false;
+    private int confirmSlot = -1;
 
     public AHScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> listings) {
         super(ScreenHandlerType.GENERIC_9X6, syncId);
         this.inventory = inventory;
         this.listings = listings;
 
+        // Add slots once
+        for (int i = 0; i < SIZE; i++) {
+            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
+                @Override
+                public boolean canTakeItems(PlayerEntity playerEntity) {
+                    return false;
+                }
+
+                @Override
+                public boolean canInsert(ItemStack stack) {
+                    return false;
+                }
+            });
+        }
+
+        drawListings();
+    }
+
+    private void drawListings() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-        // ensure inventory has SIZE slots filled (SimpleInventory passed in factory should be size 54)
         for (int i = 0; i < SIZE; i++) {
             ItemStack stack;
             if (i < listings.size()) {
@@ -52,32 +73,13 @@ public class AHScreenHandler extends ScreenHandler {
                                 " | Price: " + listing.price + " diamonds"
                 );
 
-                // set custom name via DataComponentTypes
                 stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, customName);
             } else {
                 stack = ItemStack.EMPTY;
             }
-
-            // store stack in the provided inventory so client receives it
             inventory.setStack(i, stack);
-
-            // add a read-only slot for the AH inventory
-            final int slotIndex = i;
-            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
-                @Override
-                public boolean canTakeItems(PlayerEntity playerEntity) {
-                    // normal drag/take is disabled; purchases handled in onSlotClick
-                    return false;
-                }
-
-                @Override
-                public boolean canInsert(ItemStack stack) {
-                    return false;
-                }
-            });
         }
-
-        // note: do not add player inventory slots here; we want the GUI to show only AH items
+        sendContentUpdates();
     }
 
     @Override
@@ -89,71 +91,77 @@ public class AHScreenHandler extends ScreenHandler {
      * Intercept clicks on the screen handler. We only handle clicks that target AH slots (0..SIZE-1).
      * Any click on a listed slot will attempt a purchase.
      */
+    private void drawConfirmationScreen() {
+        for (int i = 0; i < SIZE; i++) {
+            inventory.setStack(i, ItemStack.EMPTY);
+        }
+
+        ItemStack confirmStack = new ItemStack(Items.GREEN_WOOL);
+        confirmStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Confirm Purchase"));
+        inventory.setStack(22, confirmStack); // Middle-ish
+
+        ItemStack cancelStack = new ItemStack(Items.RED_WOOL);
+        cancelStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Cancel"));
+        inventory.setStack(40, cancelStack); // Middle-ish
+
+        sendContentUpdates();
+    }
+
     @Override
-    public ItemStack onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
-        // ensure server-side player
+    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (!(player instanceof ServerPlayerEntity buyer)) {
-            return ItemStack.EMPTY;
+            return;
         }
 
-        // Only handle clicks in our AH region
-        if (slotIndex < 0 || slotIndex >= SIZE) {
-            return ItemStack.EMPTY;
-        }
+        if (inConfirmation) {
+            if (slotIndex == 22) { // Confirm
+                inConfirmation = false;
+                AHStorage.AHListing listing = listings.get(confirmSlot);
 
-        // If slot doesn't correspond to an active listing, ignore (let default behavior do nothing)
-        if (slotIndex >= listings.size()) {
-            return ItemStack.EMPTY;
-        }
+                long balance = BankStorage.getBalance(buyer.getUuid());
+                if (balance < listing.price) {
+                    EasyEconomyMessages.PrivateMessage(buyer, "Not enough diamonds to buy this item.");
+                    drawListings();
+                    return;
+                }
 
-        AHStorage.AHListing listing = listings.get(slotIndex);
+                if (!BankStorage.removeBalance(buyer.getUuid(), listing.price)) {
+                    EasyEconomyMessages.PrivateMessage(buyer, "Failed to withdraw balance. Try again.");
+                    drawListings();
+                    return;
+                }
 
-        // Check buyer balance
-        long balance = BankStorage.getBalance(buyer.getUuid());
-        if (balance < listing.price) {
-            EasyEconomyMessages.PrivateMessage(buyer, "Not enough diamonds to buy this item.");
-            return ItemStack.EMPTY;
-        }
+                BankStorage.addBalance(listing.seller, listing.price);
+                ItemStack purchased = AHStorageHelper.fromListing(listing);
+                if (purchased != null && !purchased.isEmpty()) {
+                    if (!buyer.getInventory().insertStack(purchased)) {
+                        buyer.dropItem(purchased, false);
+                    }
+                }
 
-        // Attempt to withdraw from buyer
-        boolean withdrawn = BankStorage.removeBalance(buyer.getUuid(), listing.price);
-        if (!withdrawn) {
-            EasyEconomyMessages.PrivateMessage(buyer, "Failed to withdraw balance. Try again.");
-            return ItemStack.EMPTY;
-        }
+                List<AHStorage.AHListing> sellerListings = AHStorage.loadListings(listing.seller);
+                sellerListings.remove(listing);
+                AHStorage.saveListings(listing.seller, sellerListings);
+                listings.remove(confirmSlot);
 
-        // Deposit to seller
-        BankStorage.addBalance(listing.seller, listing.price);
+                EasyEconomyMessages.PrivateMessage(
+                        buyer,
+                        "Bought " + purchased.getCount() + " x " + purchased.getItem().getName(purchased).getString()
+                                + " for " + listing.price + " diamonds from " + listing.seller
+                );
 
-        // Give item to buyer (or drop if inventory full)
-        ItemStack purchased = AHStorageHelper.fromListing(listing);
-        if (purchased == null) purchased = ItemStack.EMPTY;
-        if (!purchased.isEmpty()) {
-            if (!buyer.getInventory().insertStack(purchased)) {
-                buyer.dropItem(purchased, false);
+                drawListings();
+            } else if (slotIndex == 40) { // Cancel
+                inConfirmation = false;
+                drawListings();
+            }
+        } else {
+            if (slotIndex >= 0 && slotIndex < listings.size()) {
+                inConfirmation = true;
+                confirmSlot = slotIndex;
+                drawConfirmationScreen();
             }
         }
-
-        // Remove listing from seller file and in-memory list
-        List<AHStorage.AHListing> sellerListings = AHStorage.loadListings(listing.seller);
-        sellerListings.remove(listing);
-        AHStorage.saveListings(listing.seller, sellerListings);
-
-        // remove listing from in-memory list so GUI no longer shows it
-        listings.remove(slotIndex);
-
-        // remove stack from inventory and update viewers
-        inventory.setStack(slotIndex, ItemStack.EMPTY);
-        this.sendContentUpdates(); // push update to client(s)
-
-        EasyEconomyMessages.PrivateMessage(
-                buyer,
-                "Bought " + purchased.getCount() + " x " + purchased.getItem().getName(purchased).getString()
-                        + " for " + listing.price + " diamonds from " + listing.seller
-        );
-
-        // Return the purchased stack (server-side reference) — prevents vanilla moving behavior
-        return ItemStack.EMPTY;
     }
 
     /**
