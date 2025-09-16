@@ -235,8 +235,9 @@ public class AHScreenHandler extends ScreenHandler {
 
                 BankStorage.addBalance(listing.seller, listing.price);
 
-                if (!buyer.getInventory().insertStack(purchased.copy())) {
-                    buyer.dropItem(purchased.copy(), false);
+                ItemStack purchasedCopy = purchased.copy();
+                if (!buyer.getInventory().insertStack(purchasedCopy)) {
+                    buyer.dropItem(purchasedCopy, false);
                 }
                 buyer.playerScreenHandler.sendContentUpdates();
 

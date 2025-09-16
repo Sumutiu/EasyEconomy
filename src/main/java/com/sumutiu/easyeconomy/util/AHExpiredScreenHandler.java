@@ -150,8 +150,9 @@ public class AHExpiredScreenHandler extends ScreenHandler {
                 return;
             }
 
-            if (!buyer.getInventory().insertStack(stack.copy())) {
-                buyer.dropItem(stack.copy(), false);
+            ItemStack stackToInsert = stack.copy();
+            if (!buyer.getInventory().insertStack(stackToInsert)) {
+                buyer.dropItem(stackToInsert, false);
             }
             buyer.playerScreenHandler.sendContentUpdates();
 
