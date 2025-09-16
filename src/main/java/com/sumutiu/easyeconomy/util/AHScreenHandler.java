@@ -50,6 +50,11 @@ public class AHScreenHandler extends ScreenHandler {
                 public boolean canInsert(ItemStack stack) {
                     return false;
                 }
+
+                @Override
+                public void onQuickTransfer(ItemStack newItem, ItemStack original) {
+                    // Do nothing to prevent any action on shift-click
+                }
             });
         }
 
@@ -164,10 +169,6 @@ public class AHScreenHandler extends ScreenHandler {
 
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
-        if (actionType == SlotActionType.QUICK_MOVE) {
-            return;
-        }
-
         if (!(player instanceof ServerPlayerEntity buyer)) {
             return;
         }
