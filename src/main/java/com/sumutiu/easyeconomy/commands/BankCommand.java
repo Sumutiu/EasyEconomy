@@ -9,7 +9,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 public class BankCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(CommandManager.literal("bank")
+        dispatcher.register(CommandManager.literal("balance")
                 .executes(ctx -> {
                     ServerCommandSource source = ctx.getSource();
 
