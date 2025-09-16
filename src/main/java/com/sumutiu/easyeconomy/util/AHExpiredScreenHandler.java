@@ -29,24 +29,25 @@ public class AHExpiredScreenHandler extends ScreenHandler {
     private final List<AHStorage.AHListing> expiredListings;
     private int currentPage = 0;
 
-    public AHExpiredScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> expiredListings) {
+    public AHExpiredScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> expiredListings, PlayerEntity player) {
         super(ScreenHandlerType.GENERIC_9X6, syncId);
         this.inventory = inventory;
         this.expiredListings = expiredListings;
 
         for (int i = 0; i < SIZE; i++) {
-            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
-                @Override
-                public boolean canTakeItems(PlayerEntity playerEntity) {
-                    return false;
-                }
-
-                @Override
-                public boolean canInsert(ItemStack stack) {
-                    return false;
-                }
-            });
+            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18));
         }
+
+        int playerInvY = 140;
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(player.getInventory(), col + row * 9 + 9, 8 + col * 18, playerInvY + row * 18));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(player.getInventory(), col, 8 + col * 18, playerInvY + 58));
+        }
+
         drawListings();
     }
 
@@ -111,12 +112,12 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             return;
         }
 
-        if (slotIndex == 45 && currentPage > 0) { // Previous Page
+        if (slotIndex == 45 && currentPage > 0) {
             currentPage--;
             drawListings();
             return;
         }
-        if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < expiredListings.size()) { // Next Page
+        if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < expiredListings.size()) {
             currentPage++;
             drawListings();
             return;
@@ -162,6 +163,27 @@ public class AHExpiredScreenHandler extends ScreenHandler {
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int index) {
+        if (index < SIZE) {
+            return ItemStack.EMPTY;
+        }
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasStack()) {
+            ItemStack originalStack = slot.getStack();
+            ItemStack newStack = originalStack.copy();
+            if (index >= SIZE) {
+                if (!this.insertItem(newStack, 0, SIZE, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (!this.insertItem(newStack, SIZE, this.slots.size(), true)) {
+                return ItemStack.EMPTY;
+            }
+
+            if (originalStack.isEmpty()) {
+                slot.setStack(ItemStack.EMPTY);
+            } else {
+                slot.markDirty();
+            }
+        }
         return ItemStack.EMPTY;
     }
 }

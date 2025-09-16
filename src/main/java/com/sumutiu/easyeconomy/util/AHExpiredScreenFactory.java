@@ -26,7 +26,7 @@ public class AHExpiredScreenFactory {
 
             @Override
             public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity playerEntity) {
-                return new AHExpiredScreenHandler(syncId, new SimpleInventory(AHScreenHandler.SIZE), expired);
+                return new AHExpiredScreenHandler(syncId, new SimpleInventory(AHExpiredScreenHandler.SIZE), expired, playerEntity);
             }
         };
 
