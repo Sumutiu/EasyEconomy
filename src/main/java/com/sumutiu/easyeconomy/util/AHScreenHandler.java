@@ -50,11 +50,6 @@ public class AHScreenHandler extends ScreenHandler {
                 public boolean canInsert(ItemStack stack) {
                     return false;
                 }
-
-                @Override
-                public void onQuickTransfer(ItemStack newItem, ItemStack original) {
-                    // Do nothing to prevent any action on shift-click
-                }
             });
         }
 
