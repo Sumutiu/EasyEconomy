@@ -31,8 +31,9 @@ public class EasyEconomyMessages {
     // ----------------------------
     // Configuration / Storage
     // ----------------------------
-    public static final String MAIN_FOLDER_CREATED = "Main mod folder has been created.";
-    public static final String MAIN_FOLDER_CREATION_FAILED = "Failed to create the main mod folder.";
+    public static final String MAIN_FOLDER_CREATED = "Mod folders have been created successfully.";
+    public static final String MAIN_FOLDER_CREATION_FAILED = "Failed to create the mod folders.";
+    public static final String MOD_INIT_FAILED = "Mod has failed to initialize. Error in creating the mod folders.";
 
     public static final String BANK_FILE_READ_FAILED_PLAYER = "Failed to load bank file for player %s. Error: %s.";
     public static final String BANK_FILE_WRITE_FAILED_PLAYER = "Failed to save bank file for player %s. Error: %s.";
@@ -100,8 +101,6 @@ public class EasyEconomyMessages {
     // ----------------------------
     // AH - Logging / Errors
     // ----------------------------
-    public static final String AH_FOLDER_SUCCESS = "Folder created successfully.";
-    public static final String AH_FOLDER_FAIL = "Failed to create AH Folder!";
     public static final String AH_NO_FILE = "No file for player: %s.";
     public static final String AH_FILE_LOAD_ERROR = "Failed to load AH for %s. Error: %s.";
     public static final String AH_FILE_SAVE_ERROR = "Failed to save AH for %s. Error: %s.";

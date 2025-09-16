@@ -10,30 +10,16 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.sumutiu.easyeconomy.EasyEconomy.STORAGE_FOLDER;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class BankStorage {
-    private static final File STORAGE_FOLDER = new File("mods/EasyEconomy/Banks");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // In-memory cache for balances
     private static final Map<UUID, Long> balanceCache = new ConcurrentHashMap<>();
 
-    // ----------------------------
-    // Helpers for folder + file
-    // ----------------------------
-    private static void ensureStorage() {
-        if (!STORAGE_FOLDER.exists()) {
-            if (STORAGE_FOLDER.mkdirs()) {
-                Logger(0, MAIN_FOLDER_CREATED);
-            } else {
-                Logger(2, MAIN_FOLDER_CREATION_FAILED);
-            }
-        }
-    }
-
     public static File getPlayerFile(UUID uuid) {
-        ensureStorage();
         return new File(STORAGE_FOLDER, uuid.toString() + ".json");
     }
 

@@ -15,56 +15,76 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class EasyEconomy implements ModInitializer {
 
-	@Override
+	public static final File STORAGE_FOLDER = new File("mods/EasyEconomy/Banks");
+	public static final File AH_FOLDER = new File("mods/EasyEconomy/AH");
+
+    @Override
 	public void onInitialize() {
+		if (initPlugin()) {
+			// Register commands
+			CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+				DepositCommand.register(dispatcher);
+				WithdrawCommand.register(dispatcher);
+				BankCommand.register(dispatcher);
+				PayCommand.register(dispatcher);
+				AHCommand.register(dispatcher);
+			});
 
-		// Register commands
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-			DepositCommand.register(dispatcher);
-			WithdrawCommand.register(dispatcher);
-			BankCommand.register(dispatcher);
-			PayCommand.register(dispatcher);
-			AHCommand.register(dispatcher);
-		});
+			// Player join: initialize bank and send welcome if new
+			ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+				if (handler != null && handler.getPlayer() != null) {
+					ServerPlayerEntity player = handler.getPlayer();
+					UUID uuid = player.getUuid();
 
-		// Player join: initialize bank and send welcome if new
-		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-			if (handler != null && handler.getPlayer() != null) {
-				ServerPlayerEntity player = handler.getPlayer();
-				UUID uuid = player.getUuid();
+					try {
+						// Get player bank file
+						File playerFile = BankStorage.getPlayerFile(uuid);
+						boolean isNewPlayer = !playerFile.exists();
 
-				try {
-					// Get player bank file
-					File playerFile = BankStorage.getPlayerFile(uuid);
-					boolean isNewPlayer = !playerFile.exists();
+						// Load balance into memory (0 if file doesn't exist)
+						long balance = BankStorage.getBalance(uuid);
 
-					// Load balance into memory (0 if file doesn't exist)
-					long balance = BankStorage.getBalance(uuid);
+						// Force file creation if missing
+						if (isNewPlayer) {
+							BankStorage.saveToFile(uuid, balance);
+							EasyEconomyMessages.Logger(0, String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
+							EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
+						}
 
-					// Force file creation if missing
-					if (isNewPlayer) {
-						BankStorage.saveToFile(uuid, balance);
-						EasyEconomyMessages.Logger(0, String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
-						EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
+					} catch (Exception e) {
+						EasyEconomyMessages.Logger(2,
+								String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
+						EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
 					}
-
-				} catch (Exception e) {
-					EasyEconomyMessages.Logger(2,
-							String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
-					EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
+				} else {
+					EasyEconomyMessages.Logger(2, EasyEconomyMessages.INVALID_CONNECTION_HANDLER);
 				}
-			} else {
-				EasyEconomyMessages.Logger(2, EasyEconomyMessages.INVALID_CONNECTION_HANDLER);
-			}
-		});
+			});
 
+			// Player quit: unload bank from memory
+			ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
+				if (handler != null && handler.getPlayer() != null) {
+					BankStorage.unloadPlayer(handler.getPlayer().getUuid());
+				}
+			});
+		} else {
+			Logger(2, MOD_INIT_FAILED);
+		}
+	}
+
+	// Function that initializes the plugin storage
+	private static boolean initPlugin() {
 		logAsciiBanner(MOD_ASCII_BANNER, "[EasyEconomy]: V" + getModVersion() + " - Because emeralds are overrated!");
-
-		// Player quit: unload bank from memory
-		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-			if (handler != null && handler.getPlayer() != null) {
-				BankStorage.unloadPlayer(handler.getPlayer().getUuid());
+		if (!STORAGE_FOLDER.exists() || !AH_FOLDER.exists()) {
+			if (STORAGE_FOLDER.mkdirs() && AH_FOLDER.mkdirs()) {
+				Logger(0, MAIN_FOLDER_CREATED);
+				return true;
+			} else {
+				Logger(2, MAIN_FOLDER_CREATION_FAILED);
+				return false;
 			}
-		});
+		} else {
+			return true;
+		}
 	}
 }

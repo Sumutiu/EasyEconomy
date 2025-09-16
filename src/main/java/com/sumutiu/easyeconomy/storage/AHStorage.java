@@ -7,10 +7,10 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.sumutiu.easyeconomy.EasyEconomy.AH_FOLDER;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHStorage {
-    private static final File AH_FOLDER = new File("mods/EasyEconomy/AH");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public static class AHListing {
@@ -31,18 +31,7 @@ public class AHStorage {
         }
     }
 
-    private static void ensureFolder() {
-        if (!AH_FOLDER.exists()) {
-            if (AH_FOLDER.mkdirs()) {
-                Logger(0, AH_FOLDER_SUCCESS);
-            } else {
-                Logger(2, AH_FOLDER_FAIL);
-            }
-        }
-    }
-
     public static File getFile(UUID uuid) {
-        ensureFolder();
         return new File(AH_FOLDER, uuid.toString() + ".json");
     }
 
