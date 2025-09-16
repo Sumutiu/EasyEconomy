@@ -43,12 +43,12 @@ public class AHScreenHandler extends ScreenHandler {
             this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
                 @Override
                 public boolean canTakeItems(PlayerEntity playerEntity) {
-                    return false; // disable dragging out
+                    return false;
                 }
 
                 @Override
                 public boolean canInsert(ItemStack stack) {
-                    return false; // disable inserting in
+                    return false;
                 }
             });
         }
@@ -132,14 +132,52 @@ public class AHScreenHandler extends ScreenHandler {
         return true;
     }
 
+    private void drawConfirmationScreen() {
+        // Black out the background
+        ItemStack blackPane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
+        blackPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(" "));
+        for (int i = 0; i < SIZE; i++) {
+            inventory.setStack(i, blackPane);
+        }
+
+        // Green "Confirm" 3x3 grid on the left
+        ItemStack greenPane = new ItemStack(Items.GREEN_STAINED_GLASS_PANE);
+        greenPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Confirm Purchase"));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(9 + i * 9 + j, greenPane);
+            }
+        }
+
+        // Red "Cancel" 3x3 grid on the right
+        ItemStack redPane = new ItemStack(Items.RED_STAINED_GLASS_PANE);
+        redPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Cancel Purchase"));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(15 + i * 9 + j, redPane);
+            }
+        }
+
+        // Middle 3x3 grid with item in the center
+        ItemStack grayPane = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+        grayPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(" "));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(12 + i * 9 + j, grayPane);
+            }
+        }
+
+        // Place the actual item in the center
+        AHStorage.AHListing listing = listings.get(this.confirmSlot);
+        ItemStack itemToPurchase = AHStorageHelper.fromListing(listing);
+        inventory.setStack(22, itemToPurchase);
+
+        sendContentUpdates();
+    }
+
     @Override
     public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
         if (!(player instanceof ServerPlayerEntity buyer)) {
-            return;
-        }
-
-        if (actionType == SlotActionType.QUICK_MOVE) {
-            // This is now handled by the quickMove override
             return;
         }
 
@@ -169,12 +207,14 @@ public class AHScreenHandler extends ScreenHandler {
                 if (purchased == null || purchased.isEmpty()) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Error: Could not retrieve item from listing.");
                     drawListings();
+                    this.confirmSlot = -1;
                     return;
                 }
 
                 if (!InventoryUtil.hasInventorySpace(buyer, purchased)) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Not enough inventory space to purchase this item.");
                     drawListings();
+                    this.confirmSlot = -1;
                     return;
                 }
 
@@ -182,12 +222,14 @@ public class AHScreenHandler extends ScreenHandler {
                 if (balance < listing.price) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Not enough diamonds to buy this item.");
                     drawListings();
+                    this.confirmSlot = -1;
                     return;
                 }
 
                 if (!BankStorage.removeBalance(buyer.getUuid(), listing.price)) {
                     EasyEconomyMessages.PrivateMessage(buyer, "Failed to withdraw balance. Try again.");
                     drawListings();
+                    this.confirmSlot = -1;
                     return;
                 }
 
@@ -210,9 +252,12 @@ public class AHScreenHandler extends ScreenHandler {
                 );
 
                 drawListings();
+                this.confirmSlot = -1;
+
             } else if (isCancel) {
                 inConfirmation = false;
                 drawListings();
+                this.confirmSlot = -1;
             }
             return;
         }
@@ -240,12 +285,9 @@ public class AHScreenHandler extends ScreenHandler {
 
     @Override
     public ItemStack quickMove(PlayerEntity player, int index) {
-        // If the click is in the AH GUI, block it.
         if (index < SIZE) {
             return ItemStack.EMPTY;
         }
-
-        // Otherwise, allow default behavior for player inventory
         Slot slot = this.slots.get(index);
         if (slot != null && slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
@@ -264,11 +306,6 @@ public class AHScreenHandler extends ScreenHandler {
                 slot.markDirty();
             }
         }
-
         return ItemStack.EMPTY;
-    }
-
-    private void drawConfirmationScreen() {
-        // (your confirmation GUI code here, unchanged…)
     }
 }

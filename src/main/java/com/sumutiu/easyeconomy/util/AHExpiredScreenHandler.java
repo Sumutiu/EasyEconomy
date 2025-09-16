@@ -35,7 +35,17 @@ public class AHExpiredScreenHandler extends ScreenHandler {
         this.expiredListings = expiredListings;
 
         for (int i = 0; i < SIZE; i++) {
-            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18));
+            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
+                @Override
+                public boolean canTakeItems(PlayerEntity playerEntity) {
+                    return false;
+                }
+
+                @Override
+                public boolean canInsert(ItemStack stack) {
+                    return false;
+                }
+            });
         }
 
         int playerInvY = 140;
