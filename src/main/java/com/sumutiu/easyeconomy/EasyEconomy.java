@@ -11,6 +11,8 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import java.io.File;
 import java.util.UUID;
 
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
+
 public class EasyEconomy implements ModInitializer {
 
 	@Override
@@ -55,6 +57,8 @@ public class EasyEconomy implements ModInitializer {
 				EasyEconomyMessages.Logger(2, EasyEconomyMessages.INVALID_CONNECTION_HANDLER);
 			}
 		});
+
+		logAsciiBanner(MOD_ASCII_BANNER, "[EasyEconomy]: V" + getModVersion() + " - Because emeralds are overrated!");
 
 		// Player quit: unload bank from memory
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {

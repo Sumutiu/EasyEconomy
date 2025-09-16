@@ -4,7 +4,6 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.sumutiu.easyeconomy.storage.BankStorage;
-import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -28,36 +27,36 @@ public class PayCommand {
 
     private static int execute(ServerCommandSource source, String targetName, int amount) {
         if (!(source.getEntity() instanceof ServerPlayerEntity sender)) {
-            EasyEconomyMessages.Logger(1, PLAYER_ONLY_COMMAND);
+            Logger(1, PLAYER_ONLY_COMMAND);
             return 0;
         }
 
         if (amount <= 0) {
-            EasyEconomyMessages.PrivateMessage(sender, BANK_PAY_NEGATIVE);
+            PrivateMessage(sender, BANK_PAY_NEGATIVE);
             return 0;
         }
 
         // Null-safe check for server and player manager
         if (sender.getServer() == null || sender.getServer().getPlayerManager() == null) {
-            EasyEconomyMessages.PrivateMessage(sender, PLAYER_ONLY_COMMAND);
+            PrivateMessage(sender, PLAYER_ONLY_COMMAND);
             return 0;
         }
 
         ServerPlayerEntity target = sender.getServer().getPlayerManager().getPlayer(targetName);
+
         if (target == null) {
-            EasyEconomyMessages.PrivateMessage(sender, String.format(EasyEconomyMessages.BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName));
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName));
             return 0;
         }
 
         if (sender.getUuid().equals(target.getUuid())) {
-            EasyEconomyMessages.PrivateMessage(sender, EasyEconomyMessages.BANK_PAY_FAILED_SELF);
+            PrivateMessage(sender, BANK_PAY_FAILED_SELF);
             return 0;
         }
 
         long senderBalance = BankStorage.getBalance(sender.getUuid());
         if (senderBalance < amount) {
-            EasyEconomyMessages.PrivateMessage(sender,
-                    String.format(EasyEconomyMessages.BANK_PAY_FAILED_INSUFFICIENT, target.getName().getString(), senderBalance));
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_INSUFFICIENT, targetName, senderBalance));
             return 0;
         }
 
@@ -65,7 +64,7 @@ public class PayCommand {
             // Withdraw from sender
             boolean removed = BankStorage.removeBalance(sender.getUuid(), amount);
             if (!removed) {
-                EasyEconomyMessages.PrivateMessage(sender, EasyEconomyMessages.BANK_PAY_FAILED_ERROR);
+                PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
                 return 0;
             }
 
@@ -73,14 +72,12 @@ public class PayCommand {
             BankStorage.addBalance(target.getUuid(), amount);
 
             // Notify both players
-            EasyEconomyMessages.PrivateMessage(sender,
-                    String.format(EasyEconomyMessages.BANK_PAY_SUCCESS_SENT, amount, target.getName().getString()));
-            EasyEconomyMessages.PrivateMessage(target,
-                    String.format(EasyEconomyMessages.BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()));
+            PrivateMessage(sender, String.format(BANK_PAY_SUCCESS_SENT, amount, targetName));
+            PrivateMessage(target, String.format(BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()));
 
         } catch (Exception e) {
-            EasyEconomyMessages.Logger(2, String.format(PAY_FAILED_ERROR, sender.getUuid(), target.getUuid(), e.getMessage()));
-            EasyEconomyMessages.PrivateMessage(sender, EasyEconomyMessages.BANK_PAY_FAILED_ERROR);
+            Logger(2, String.format(PAY_FAILED_ERROR, sender.getName().getString(), targetName, e.getMessage()));
+            PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
             return 0;
         }
 

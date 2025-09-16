@@ -11,6 +11,7 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
 
@@ -27,6 +28,10 @@ public class AHCommand {
                         .then(argument("price", IntegerArgumentType.integer(1))
                                 .executes(ctx -> {
                                     ServerPlayerEntity player = ctx.getSource().getPlayer();
+                                    if (player == null) {
+                                        Logger(1, PLAYER_ONLY_COMMAND);
+                                        return 0;
+                                    }
                                     long price = IntegerArgumentType.getInteger(ctx, "price");
                                     return sellItem(player, price);
                                 })
@@ -35,6 +40,10 @@ public class AHCommand {
                 .then(literal("expired")
                         .executes(ctx -> {
                             ServerPlayerEntity player = ctx.getSource().getPlayer();
+                            if (player == null) {
+                                Logger(1, PLAYER_ONLY_COMMAND);
+                                return 0;
+                            }
                             AHExpiredScreenFactory.open(player);
                             return SINGLE_SUCCESS;
                         })
@@ -45,12 +54,12 @@ public class AHCommand {
     private static int sellItem(ServerPlayerEntity player, long price) {
         ItemStack held = player.getMainHandStack();
         if (held.isEmpty()) {
-            EasyEconomyMessages.PrivateMessage(player, "You are not holding any item.");
+            EasyEconomyMessages.PrivateMessage(player, AH_SELL_EMPTY);
             return 0;
         }
 
         if (price <= 0) {
-            EasyEconomyMessages.PrivateMessage(player, "Price must be greater than 0.");
+            EasyEconomyMessages.PrivateMessage(player, AH_SELL_NO_PRICE);
             return 0;
         }
 
@@ -74,10 +83,7 @@ public class AHCommand {
 
         held.decrement(qty); // remove all from hand
 
-        EasyEconomyMessages.PrivateMessage(
-                player,
-                "Listed " + qty + " of " + itemName + " on AH for " + price + " diamonds."
-        );
+        EasyEconomyMessages.PrivateMessage(player, String.format(AH_SELL_CONFIRMATION, qty, itemName, price));
 
         return SINGLE_SUCCESS;
     }

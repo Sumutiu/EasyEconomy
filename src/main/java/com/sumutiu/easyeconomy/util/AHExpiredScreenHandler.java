@@ -18,6 +18,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
+
 public class AHExpiredScreenHandler extends ScreenHandler {
 
     public static final int ROWS = 6;
@@ -141,12 +143,14 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             ItemStack stack = AHStorageHelper.fromListing(listing);
 
             if (stack == null || stack.isEmpty()) {
-                EasyEconomyMessages.PrivateMessage(buyer, "Error: Could not retrieve item from listing.");
+                EasyEconomyMessages.PrivateMessage(buyer, AH_BUY_ERROR);
+                drawListings();
                 return;
             }
 
-            if (!InventoryUtil.hasInventorySpace(buyer, stack)) {
-                EasyEconomyMessages.PrivateMessage(buyer, "Not enough inventory space to claim this item.");
+            if (InventoryUtil.noInventorySpace(buyer, stack)) {
+                EasyEconomyMessages.PrivateMessage(buyer, AH_CLAIM_NO_SPACE);
+                drawListings();
                 return;
             }
 
@@ -163,10 +167,7 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             AHStorage.saveListings(player.getUuid(), allListings);
 
             String itemName = stack.getItem().getName().getString();
-            EasyEconomyMessages.PrivateMessage(
-                    buyer,
-                    "Claimed expired listing: " + stack.getCount() + " x " + itemName
-            );
+            EasyEconomyMessages.PrivateMessage(buyer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), itemName));
 
             drawListings();
         }
@@ -178,14 +179,10 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             return ItemStack.EMPTY;
         }
         Slot slot = this.slots.get(index);
-        if (slot != null && slot.hasStack()) {
+        if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
             ItemStack newStack = originalStack.copy();
-            if (index >= SIZE) {
-                if (!this.insertItem(newStack, 0, SIZE, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.insertItem(newStack, SIZE, this.slots.size(), true)) {
+            if (!this.insertItem(newStack, 0, SIZE, false)) {
                 return ItemStack.EMPTY;
             }
 

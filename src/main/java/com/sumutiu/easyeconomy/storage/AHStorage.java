@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHStorage {
     private static final File AH_FOLDER = new File("mods/EasyEconomy/AH");
@@ -21,7 +21,6 @@ public class AHStorage {
         public UUID seller;
         public String sellerName;
 
-        public AHListing() {}
         public AHListing(String itemId, int quantity, long price, UUID seller, String sellerName) {
             this.itemId = itemId;
             this.quantity = quantity;
@@ -33,7 +32,13 @@ public class AHStorage {
     }
 
     private static void ensureFolder() {
-        if (!AH_FOLDER.exists()) AH_FOLDER.mkdirs();
+        if (!AH_FOLDER.exists()) {
+            if (AH_FOLDER.mkdirs()) {
+                Logger(0, AH_FOLDER_SUCCESS);
+            } else {
+                Logger(2, AH_FOLDER_FAIL);
+            }
+        }
     }
 
     public static File getFile(UUID uuid) {
@@ -44,17 +49,15 @@ public class AHStorage {
     public static List<AHListing> loadListings(UUID uuid) {
         File file = getFile(uuid);
         if (!file.exists()) {
-            EasyEconomyMessages.Logger(0, "AH: no file for player " + uuid);
+            Logger(0, String.format(AH_NO_FILE, uuid));
             return new ArrayList<>();
         }
 
         try (Reader reader = new FileReader(file)) {
             AHListing[] arr = GSON.fromJson(reader, AHListing[].class);
-            List<AHListing> list = arr != null ? new ArrayList<>(Arrays.asList(arr)) : new ArrayList<>();
-            EasyEconomyMessages.Logger(0, "AH: loaded " + list.size() + " listings from " + file.getName());
-            return list;
+            return arr != null ? new ArrayList<>(Arrays.asList(arr)) : new ArrayList<>();
         } catch (IOException e) {
-            EasyEconomyMessages.Logger(2, "Failed to load AH for " + uuid + ": " + e.getMessage());
+            Logger(2, String.format(AH_FILE_LOAD_ERROR, uuid, e.getMessage()));
             return new ArrayList<>();
         }
     }
@@ -63,7 +66,7 @@ public class AHStorage {
         try (Writer writer = new FileWriter(getFile(uuid))) {
             GSON.toJson(listings, writer);
         } catch (IOException e) {
-            EasyEconomyMessages.Logger(2, "Failed to save AH for " + uuid + ": " + e.getMessage());
+            Logger(2, String.format(AH_FILE_SAVE_ERROR, uuid, e.getMessage()));
         }
     }
 

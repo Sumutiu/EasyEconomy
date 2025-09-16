@@ -32,9 +32,9 @@ public class EasyEconomyMessages {
     public static final String MAIN_FOLDER_CREATED = "Main mod folder has been created.";
     public static final String MAIN_FOLDER_CREATION_FAILED = "Failed to create the main mod folder.";
 
-    public static final String BANK_FILE_READ_FAILED_PLAYER = "Failed to load bank file for player %s. Error: %s";
-    public static final String BANK_FILE_WRITE_FAILED_PLAYER = "Failed to save bank file for player %s. Error: %s";
-    public static final String BANK_TEMP_RENAME_FAILED = "Failed to rename temp bank file for player %s.";
+    public static final String BANK_FILE_READ_FAILED_PLAYER = "Failed to load bank file for player %s. Error: %s.";
+    public static final String BANK_FILE_WRITE_FAILED_PLAYER = "Failed to save bank file for player %s. Error: %s.";
+    public static final String BANK_TEMP_RENAME_FAILED = "Failed to rename temp bank file for player %s. Error: %s.";
 
     // ----------------------------
     // Bank - General
@@ -46,16 +46,16 @@ public class EasyEconomyMessages {
     public static final String BANK_BALANCE_CONFIRM = "Withdrew %d diamonds from your bank.";
     public static final String INVENTORY_EMPTY = "You have no diamonds to deposit.";
     public static final String BANK_DEPOSIT_QTY = "Deposited %d diamonds to your bank.";
-    public static final String BANK_DEPOSIT_FAILED = "Failed to deposit for player %s. Error: %s";
+    public static final String BANK_DEPOSIT_FAILED = "Failed to deposit for player %s. Error: %s.";
     public static final String BANK_DEPOSIT_FAILED_PRIVATE = "An error occurred while depositing. Please contact an admin.";
     public static final String BANK_PAY_NEGATIVE = "The quantity must be positive.";
 
     // ----------------------------
     // Bank - Welcome / Notifications
     // ----------------------------
-    public static final String BANK_WELCOME_NEW_PLAYER = "Welcome to Diamond Economy! Your bank has been created with 0 diamonds.";
+    public static final String BANK_WELCOME_NEW_PLAYER = "Welcome to Easy Economy! Your bank has been created with 0 diamonds.";
     public static final String BANK_FILE_CREATED_FOR_PLAYER = "Created new bank file for player %s.";
-    public static final String BANK_INIT_FAILED = "Failed to initialize bank file for player %s. Error: %s";
+    public static final String BANK_INIT_FAILED = "Failed to initialize bank file for player %s. Error: %s.";
     public static final String BANK_INIT_FAILED_PRIVATE = "An error occurred while initializing your bank. Please contact an admin.";
 
     // ----------------------------
@@ -74,11 +74,45 @@ public class EasyEconomyMessages {
     public static final String BANK_ADDED = "Added %d diamonds to player %s (new balance: %d).";
     public static final String BANK_REMOVED = "Removed %d diamonds from player %s (new balance: %d).";
 
-    public static final String BANK_READ_FAILED = "Failed to read bank for player %s. Error: %s";
+    public static final String BANK_READ_FAILED = "Failed to read bank for player %s. Error: %s.";
     public static final String BANK_READ_FAILED_PRIVATE = "An error occurred while reading your bank. Please contact an admin.";
-    public static final String BANK_WITHDRAW_FAILED = "Failed to withdraw for player %s. Error: %s";
+    public static final String BANK_WITHDRAW_FAILED = "Failed to withdraw for player %s. Error: %s.";
     public static final String BANK_WITHDRAW_FAILED_PRIVATE = "An error occurred while withdrawing. Please contact an admin.";
-    public static final String PAY_FAILED_ERROR = "Failed to process payment from %s to %s. Error: %s";
+    public static final String PAY_FAILED_ERROR = "Failed to process payment from %s to %s. Error: %s.";
+
+    // ----------------------------
+    // AH - General
+    // ----------------------------
+    public static final String AH_SELL_EMPTY = "You are not holding any item.";
+    public static final String AH_SELL_NO_PRICE = "Price must be greater than 0.";
+    public static final String AH_SELL_CONFIRMATION = "Listed %d of %s on AH for %d diamonds.";
+    public static final String AH_BUY_ERROR = "Could not retrieve item from listing.";
+    public static final String AH_BUY_CONFIRMATION= "Bought %d of %s for %d diamonds from %s.";
+    public static final String AH_WITHDRAW_ERROR = "Failed to withdraw balance. Try again.";
+    public static final String AH_BUY_NO_MONEY = "Not enough diamonds in your deposit to purchase this item.";
+    public static final String AH_BUY_NO_SPACE = "Not enough inventory space to purchase this item.";
+    public static final String AH_CLAIM_NO_SPACE = "Not enough inventory space to claim this item.";
+    public static final String AH_CLAIM_EXPIRED = "Claimed expired listing: %d of %s.";
+    public static final String AH_NO_ACTIVE_LISTING = "There are currently no active AH listings.";
+
+    // ----------------------------
+    // AH - Logging / Errors
+    // ----------------------------
+    public static final String AH_FOLDER_SUCCESS = "Folder created successfully.";
+    public static final String AH_FOLDER_FAIL = "Failed to create AH Folder!";
+    public static final String AH_NO_FILE = "No file for player: %s.";
+    public static final String AH_FILE_LOAD_ERROR = "Failed to load AH for %s. Error: %s.";
+    public static final String AH_FILE_SAVE_ERROR = "Failed to save AH for %s. Error: %s.";
+    public static final String AH_INVALID_ID = "Invalid item ID in listing: %s.";
+    public static final String AH_ID_NOT_FOUND = "Item not found for ID: %s.";
+    public static final String AH_ID_ITEMSTACK_ERROR = "Error converting listing to ItemStack: %s.";
+    public static final String AH_FILE_ERROR = "Could not list files in folder: %s.";
+    public static final String AH_FOLDER_NOT_FOUND = "Folder not found: %s.";
+    public static final String AH_FILE_NAME_ERROR = "Skipping file with unexpected name: %s.";
+    public static final String AH_FILE_NAME_NO_UUID = "Skipping non-UUID file: %s.";
+    public static final String AH_LISTING_INFO = "Found %d active listings in %s.";
+    public static final String AH_LISTING_EMPTY = "No active listings in %s.";
+    public static final String AH_LISTING_ALL = "Total active listings found: %s.";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mod_ID);
 

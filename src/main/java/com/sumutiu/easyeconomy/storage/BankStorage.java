@@ -69,7 +69,7 @@ public class BankStorage {
         try {
             Files.move(tmpFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            Logger(1, String.format(BANK_TEMP_RENAME_FAILED, uuid) + " Error: " + e.getMessage());
+            Logger(1, String.format(BANK_TEMP_RENAME_FAILED, uuid, e.getMessage()));
         }
     }
 

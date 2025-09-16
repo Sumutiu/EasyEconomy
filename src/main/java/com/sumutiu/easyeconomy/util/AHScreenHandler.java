@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
+
 public class AHScreenHandler extends ScreenHandler {
 
     public static final int ROWS = 6;
@@ -205,14 +207,14 @@ public class AHScreenHandler extends ScreenHandler {
 
                 ItemStack purchased = AHStorageHelper.fromListing(listing);
                 if (purchased == null || purchased.isEmpty()) {
-                    EasyEconomyMessages.PrivateMessage(buyer, "Error: Could not retrieve item from listing.");
+                    PrivateMessage(buyer, AH_BUY_ERROR);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
                 }
 
-                if (!InventoryUtil.hasInventorySpace(buyer, purchased)) {
-                    EasyEconomyMessages.PrivateMessage(buyer, "Not enough inventory space to purchase this item.");
+                if (InventoryUtil.noInventorySpace(buyer, purchased)) {
+                    PrivateMessage(buyer, AH_BUY_NO_SPACE);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
@@ -220,14 +222,14 @@ public class AHScreenHandler extends ScreenHandler {
 
                 long balance = BankStorage.getBalance(buyer.getUuid());
                 if (balance < listing.price) {
-                    EasyEconomyMessages.PrivateMessage(buyer, "Not enough diamonds to buy this item.");
+                    PrivateMessage(buyer, AH_BUY_NO_MONEY);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
                 }
 
                 if (!BankStorage.removeBalance(buyer.getUuid(), listing.price)) {
-                    EasyEconomyMessages.PrivateMessage(buyer, "Failed to withdraw balance. Try again.");
+                    PrivateMessage(buyer, AH_WITHDRAW_ERROR);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
@@ -246,11 +248,7 @@ public class AHScreenHandler extends ScreenHandler {
                 AHStorage.saveListings(listing.seller, sellerListings);
                 listings.remove(this.confirmSlot);
 
-                EasyEconomyMessages.PrivateMessage(
-                        buyer,
-                        "Bought " + purchased.getCount() + " x " + purchased.getItem().getName(purchased).getString()
-                                + " for " + listing.price + " diamonds from " + listing.sellerName
-                );
+                EasyEconomyMessages.PrivateMessage( buyer, String.format(AH_BUY_CONFIRMATION, purchased.getCount(), purchased.getItem().getName(purchased).getString(), listing.price, listing.sellerName));
 
                 drawListings();
                 this.confirmSlot = -1;
@@ -290,14 +288,10 @@ public class AHScreenHandler extends ScreenHandler {
             return ItemStack.EMPTY;
         }
         Slot slot = this.slots.get(index);
-        if (slot != null && slot.hasStack()) {
+        if (slot.hasStack()) {
             ItemStack originalStack = slot.getStack();
             ItemStack newStack = originalStack.copy();
-            if (index >= SIZE) {
-                if (!this.insertItem(newStack, 0, SIZE, false)) {
-                    return ItemStack.EMPTY;
-                }
-            } else if (!this.insertItem(newStack, SIZE, this.slots.size(), true)) {
+            if (!this.insertItem(newStack, 0, SIZE, false)) {
                 return ItemStack.EMPTY;
             }
 

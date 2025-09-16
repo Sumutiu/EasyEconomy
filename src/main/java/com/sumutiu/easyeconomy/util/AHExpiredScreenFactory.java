@@ -1,7 +1,6 @@
 package com.sumutiu.easyeconomy.util;
 
 import com.sumutiu.easyeconomy.storage.AHStorage;
-import com.sumutiu.easyeconomy.storage.AHStorage;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;

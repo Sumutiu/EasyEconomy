@@ -1,6 +1,5 @@
 package com.sumutiu.easyeconomy.storage;
 
-import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
@@ -10,6 +9,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHStorageHelper {
 
@@ -23,20 +24,20 @@ public class AHStorageHelper {
 
             Identifier id = Identifier.tryParse(listing.itemId);
             if (id == null) {
-                EasyEconomyMessages.Logger(1, "AH: invalid item id in listing: " + listing.itemId);
+                Logger(1, String.format(AH_INVALID_ID, listing.itemId));
                 return ItemStack.EMPTY;
             }
 
             Item item = Registries.ITEM.get(id);
             if (item == net.minecraft.item.Items.AIR) {
-                EasyEconomyMessages.Logger(1, "AH: item not found for id: " + listing.itemId);
+                Logger(1, String.format(AH_ID_NOT_FOUND, listing.itemId));
                 return ItemStack.EMPTY;
             }
 
             int qty = Math.max(1, listing.quantity);
             return new ItemStack(item, qty);
         } catch (Exception e) {
-            EasyEconomyMessages.Logger(2, "AH: error converting listing to ItemStack: " + e.getMessage());
+            Logger(2, String.format(AH_ID_ITEMSTACK_ERROR, e.getMessage()));
             return ItemStack.EMPTY;
         }
     }
@@ -48,13 +49,13 @@ public class AHStorageHelper {
         List<AHStorage.AHListing> all = new ArrayList<>();
         File folder = new File("mods/EasyEconomy/AH");
         if (!folder.exists()) {
-            EasyEconomyMessages.Logger(0, "AH: folder not found: " + folder.getPath());
+            Logger(1, String.format(AH_FOLDER_NOT_FOUND, folder.getPath()));
             return all;
         }
 
         File[] files = folder.listFiles((f) -> f.isFile() && f.getName().toLowerCase().endsWith(".json"));
         if (files == null) {
-            EasyEconomyMessages.Logger(1, "AH: could not list files in folder " + folder.getPath());
+            Logger(2, String.format(AH_FILE_ERROR, folder.getPath()));
             return all;
         }
 
@@ -62,7 +63,7 @@ public class AHStorageHelper {
             String name = f.getName();
             int dot = name.lastIndexOf('.');
             if (dot <= 0) {
-                EasyEconomyMessages.Logger(1, "AH: skipping file with unexpected name: " + name);
+                Logger(1, String.format(AH_FILE_NAME_ERROR, name));
                 continue;
             }
             String base = name.substring(0, dot);
@@ -71,7 +72,7 @@ public class AHStorageHelper {
             try {
                 uuid = UUID.fromString(base);
             } catch (IllegalArgumentException ex) {
-                EasyEconomyMessages.Logger(1, "AH: skipping non-UUID file: " + name);
+                Logger(1, String.format(AH_FILE_NAME_NO_UUID, name));
                 continue;
             }
 
@@ -80,13 +81,12 @@ public class AHStorageHelper {
             List<AHStorage.AHListing> active = AHStorage.getActiveListings(playerAll);
             if (!active.isEmpty()) {
                 all.addAll(active);
-                EasyEconomyMessages.Logger(0, "AH: found " + active.size() + " active listings in " + name);
+                Logger(0, String.format(AH_LISTING_INFO, active.size(), name));
             } else {
-                EasyEconomyMessages.Logger(0, "AH: no active listings in " + name);
+                Logger(0, String.format(AH_LISTING_EMPTY, name));
             }
         }
-
-        EasyEconomyMessages.Logger(0, "AH: total active listings found: " + all.size());
+        Logger(0, String.format(AH_LISTING_ALL, all.size()));
         return all;
     }
 }
