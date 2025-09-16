@@ -4,6 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.sumutiu.easyeconomy.storage.BankStorage;
+import net.minecraft.command.CommandSource;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
@@ -17,6 +19,15 @@ public class PayCommand {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("pay")
                 .then(argument("target", StringArgumentType.word())
+                        .suggests((context, builder) -> {
+                            MinecraftServer server = context.getSource().getServer();
+                            if (server != null) {
+                                return CommandSource.suggestMatching(
+                                        server.getPlayerNames(), builder
+                                );
+                            }
+                            return builder.buildFuture();
+                        })
                         .then(argument("amount", IntegerArgumentType.integer(1))
                                 .executes(ctx -> {
                                     String targetName = StringArgumentType.getString(ctx, "target");
