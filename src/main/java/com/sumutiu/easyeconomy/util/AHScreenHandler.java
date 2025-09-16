@@ -120,17 +120,44 @@ public class AHScreenHandler extends ScreenHandler {
      * Any click on a listed slot will attempt a purchase.
      */
     private void drawConfirmationScreen() {
+        // Black out the background
+        ItemStack blackPane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
+        blackPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(" "));
         for (int i = 0; i < SIZE; i++) {
-            inventory.setStack(i, ItemStack.EMPTY);
+            inventory.setStack(i, blackPane);
         }
 
-        ItemStack confirmStack = new ItemStack(Items.GREEN_WOOL);
-        confirmStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Confirm Purchase"));
-        inventory.setStack(22, confirmStack); // Middle-ish
+        // Green "Confirm" 3x3 grid on the left
+        ItemStack greenPane = new ItemStack(Items.GREEN_STAINED_GLASS_PANE);
+        greenPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Confirm Purchase"));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(9 + i * 9 + j, greenPane);
+            }
+        }
 
-        ItemStack cancelStack = new ItemStack(Items.RED_WOOL);
-        cancelStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Cancel"));
-        inventory.setStack(40, cancelStack); // Middle-ish
+        // Red "Cancel" 3x3 grid on the right
+        ItemStack redPane = new ItemStack(Items.RED_STAINED_GLASS_PANE);
+        redPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Cancel Purchase"));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(15 + i * 9 + j, redPane);
+            }
+        }
+
+        // Middle 3x3 grid with item in the center
+        ItemStack grayPane = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+        grayPane.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(" "));
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                inventory.setStack(12 + i * 9 + j, grayPane);
+            }
+        }
+
+        // Place the actual item in the center
+        AHStorage.AHListing listing = listings.get(confirmSlot);
+        ItemStack itemToPurchase = AHStorageHelper.fromListing(listing);
+        inventory.setStack(22, itemToPurchase); // Center slot of the middle 3x3 grid
 
         sendContentUpdates();
     }
@@ -146,7 +173,24 @@ public class AHScreenHandler extends ScreenHandler {
         }
 
         if (inConfirmation) {
-            if (slotIndex == 22) { // Confirm
+            boolean isConfirm = false;
+            boolean isCancel = false;
+
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (slotIndex == 9 + i * 9 + j) {
+                        isConfirm = true;
+                        break;
+                    }
+                    if (slotIndex == 15 + i * 9 + j) {
+                        isCancel = true;
+                        break;
+                    }
+                }
+                if (isConfirm || isCancel) break;
+            }
+
+            if (isConfirm) {
                 inConfirmation = false;
                 AHStorage.AHListing listing = listings.get(confirmSlot);
 
@@ -195,7 +239,7 @@ public class AHScreenHandler extends ScreenHandler {
                 );
 
                 drawListings();
-            } else if (slotIndex == 40) { // Cancel
+            } else if (isCancel) {
                 inConfirmation = false;
                 drawListings();
             }
