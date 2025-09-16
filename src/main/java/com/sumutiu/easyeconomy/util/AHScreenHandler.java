@@ -25,11 +25,13 @@ public class AHScreenHandler extends ScreenHandler {
     public static final int ROWS = 6;
     public static final int COLUMNS = 9;
     public static final int SIZE = ROWS * COLUMNS; // 54 slots
+    public static final int ITEMS_PER_PAGE = 45;
 
     private final Inventory inventory;
     private final List<AHStorage.AHListing> listings;
     private boolean inConfirmation = false;
     private int confirmSlot = -1;
+    private int currentPage = 0;
 
     public AHScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> listings) {
         super(ScreenHandlerType.GENERIC_9X6, syncId);
@@ -55,13 +57,19 @@ public class AHScreenHandler extends ScreenHandler {
     }
 
     private void drawListings() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-
+        // Clear entire inventory
         for (int i = 0; i < SIZE; i++) {
-            ItemStack stack;
-            if (i < listings.size()) {
-                AHStorage.AHListing listing = listings.get(i);
-                stack = AHStorageHelper.fromListing(listing);
+            inventory.setStack(i, ItemStack.EMPTY);
+        }
+
+        // Draw item listings for the current page
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        int startIndex = currentPage * ITEMS_PER_PAGE;
+        for (int i = 0; i < ITEMS_PER_PAGE; i++) {
+            int listingIndex = startIndex + i;
+            if (listingIndex < listings.size()) {
+                AHStorage.AHListing listing = listings.get(listingIndex);
+                ItemStack stack = AHStorageHelper.fromListing(listing);
                 if (stack == null) stack = ItemStack.EMPTY;
 
                 String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
@@ -76,11 +84,29 @@ public class AHScreenHandler extends ScreenHandler {
                 loreLines.add(Text.literal("Price: " + listing.price + " diamonds"));
 
                 stack.set(net.minecraft.component.DataComponentTypes.LORE, new LoreComponent(loreLines));
-            } else {
-                stack = ItemStack.EMPTY;
+                inventory.setStack(i, stack);
             }
-            inventory.setStack(i, stack);
         }
+
+        // Draw navigation controls
+        int maxPage = (listings.size() - 1) / ITEMS_PER_PAGE;
+
+        if (currentPage > 0) {
+            ItemStack prevStack = new ItemStack(Items.ARROW);
+            prevStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Previous Page"));
+            inventory.setStack(45, prevStack);
+        }
+
+        if (currentPage < maxPage) {
+            ItemStack nextStack = new ItemStack(Items.ARROW);
+            nextStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Next Page"));
+            inventory.setStack(53, nextStack);
+        }
+
+        ItemStack pageInfo = new ItemStack(Items.PAPER);
+        pageInfo.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Page " + (currentPage + 1) + " of " + (maxPage + 1)));
+        inventory.setStack(49, pageInfo);
+
         sendContentUpdates();
     }
 
@@ -174,9 +200,23 @@ public class AHScreenHandler extends ScreenHandler {
                 drawListings();
             }
         } else {
-            if (slotIndex >= 0 && slotIndex < listings.size()) {
+            // Handle navigation clicks
+            if (slotIndex == 45 && currentPage > 0) { // Previous Page
+                currentPage--;
+                drawListings();
+                return;
+            }
+            if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < listings.size()) { // Next Page
+                currentPage++;
+                drawListings();
+                return;
+            }
+
+            // Handle item clicks
+            int listingIndex = currentPage * ITEMS_PER_PAGE + slotIndex;
+            if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < listings.size()) {
                 inConfirmation = true;
-                confirmSlot = slotIndex;
+                confirmSlot = listingIndex;
                 drawConfirmationScreen();
             }
         }
