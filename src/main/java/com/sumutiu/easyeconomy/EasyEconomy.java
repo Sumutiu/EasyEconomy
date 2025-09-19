@@ -74,7 +74,7 @@ public class EasyEconomy implements ModInitializer {
 
 	// Function that initializes the plugin storage
 	private static boolean initPlugin() {
-		logAsciiBanner(MOD_ASCII_BANNER, "[EasyEconomy]: V" + getModVersion() + " - Because emeralds are overrated!");
+		logAsciiBanner(MOD_ASCII_BANNER, Mod_ID + ": V" + getModVersion() + " - Because emeralds are overrated!");
 		if (!STORAGE_FOLDER.exists() || !AH_FOLDER.exists()) {
 			if (STORAGE_FOLDER.mkdirs() && AH_FOLDER.mkdirs()) {
 				Logger(0, MAIN_FOLDER_CREATED);
