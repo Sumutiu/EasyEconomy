@@ -6,7 +6,6 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
@@ -16,11 +15,11 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHScreenFactory {
 
-    public static void open(ServerPlayerEntity player, MinecraftServer server) {
+    public static void open(ServerPlayerEntity player) {
         List<AHStorage.AHListing> allActive = AHStorageHelper.getAllActiveListings();
 
         if (allActive.isEmpty()) {
-            EasyEconomyMessages.PrivateMessage(player, AH_NO_ACTIVE_LISTING, server);
+            EasyEconomyMessages.PrivateMessage(player, AH_NO_ACTIVE_LISTING);
             return;
         }
 
@@ -32,7 +31,7 @@ public class AHScreenFactory {
 
             @Override
             public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity playerEntity) {
-                return new AHScreenHandler(syncId, new SimpleInventory(AHScreenHandler.SIZE), allActive, playerEntity, server);
+                return new AHScreenHandler(syncId, new SimpleInventory(AHScreenHandler.SIZE), allActive, playerEntity);
             }
         };
 

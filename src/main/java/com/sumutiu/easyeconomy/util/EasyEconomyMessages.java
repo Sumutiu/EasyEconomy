@@ -4,6 +4,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import org.slf4j.Logger;
@@ -121,8 +122,8 @@ public class EasyEconomyMessages {
     // ----------------------------
     // Player messaging
     // ----------------------------
-    public static void PrivateMessage(ServerPlayerEntity player, String message, MinecraftServer server) {
-        if (isConnected(player, server)) {
+    public static void PrivateMessage(ServerPlayerEntity player, String message) {
+        if (isConnected(player)) {
             player.sendMessage(Text.literal(Mod_ID + ": ")
                     .styled(style -> style.withColor(Formatting.GREEN))
                     .append(Text.literal(message).styled(s -> s.withColor(Formatting.WHITE))), false);
@@ -151,10 +152,16 @@ public class EasyEconomyMessages {
                 .orElse("unknown");
     }
 
-    public static boolean isConnected(ServerPlayerEntity player, MinecraftServer server) {
-        return player != null
-                && server != null
-                && server.getPlayerManager().getPlayer(player.getUuid()) == player;
+    public static boolean isConnected(ServerPlayerEntity player) {
+        if (player == null) {
+            return false;
+        }
+        ServerWorld world = player.getEntityWorld();
+        if (!(world instanceof ServerWorld)) {
+            return false;
+        }
+        MinecraftServer server = world.getServer();
+        return server.getPlayerManager().getPlayer(player.getUuid()) == player;
     }
 
     public static void logAsciiBanner(String banner, String footer) {

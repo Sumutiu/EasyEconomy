@@ -11,7 +11,6 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.component.type.LoreComponent;
@@ -32,16 +31,14 @@ public class AHScreenHandler extends ScreenHandler {
 
     private final Inventory inventory;
     private final List<AHStorage.AHListing> listings;
-    private final MinecraftServer server;
     private boolean inConfirmation = false;
     private int confirmSlot = -1;
     private int currentPage = 0;
 
-    public AHScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> listings, PlayerEntity player, MinecraftServer server) {
+    public AHScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> listings, PlayerEntity player) {
         super(ScreenHandlerType.GENERIC_9X6, syncId);
         this.inventory = inventory;
         this.listings = listings;
-        this.server = server;
 
         // Auction House slots
         for (int i = 0; i < SIZE; i++) {
@@ -210,14 +207,14 @@ public class AHScreenHandler extends ScreenHandler {
 
                 ItemStack purchased = AHStorageHelper.fromListing(listing);
                 if (purchased == null || purchased.isEmpty()) {
-                    PrivateMessage(buyer, AH_BUY_ERROR, this.server);
+                    PrivateMessage(buyer, AH_BUY_ERROR);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
                 }
 
                 if (InventoryUtil.noInventorySpace(buyer, purchased)) {
-                    PrivateMessage(buyer, AH_BUY_NO_SPACE, this.server);
+                    PrivateMessage(buyer, AH_BUY_NO_SPACE);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
@@ -225,14 +222,14 @@ public class AHScreenHandler extends ScreenHandler {
 
                 long balance = BankStorage.getBalance(buyer.getUuid());
                 if (balance < listing.price) {
-                    PrivateMessage(buyer, AH_BUY_NO_MONEY, this.server);
+                    PrivateMessage(buyer, AH_BUY_NO_MONEY);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
                 }
 
                 if (!BankStorage.removeBalance(buyer.getUuid(), listing.price)) {
-                    PrivateMessage(buyer, AH_WITHDRAW_ERROR, this.server);
+                    PrivateMessage(buyer, AH_WITHDRAW_ERROR);
                     drawListings();
                     this.confirmSlot = -1;
                     return;
@@ -251,7 +248,7 @@ public class AHScreenHandler extends ScreenHandler {
                 AHStorage.saveListings(listing.seller, sellerListings);
                 listings.remove(this.confirmSlot);
 
-                EasyEconomyMessages.PrivateMessage( buyer, String.format(AH_BUY_CONFIRMATION, purchased.getCount(), purchased.getItem().getName(purchased).getString(), listing.price, listing.sellerName), this.server);
+                EasyEconomyMessages.PrivateMessage( buyer, String.format(AH_BUY_CONFIRMATION, purchased.getCount(), purchased.getItem().getName(purchased).getString(), listing.price, listing.sellerName));
 
                 drawListings();
                 this.confirmSlot = -1;

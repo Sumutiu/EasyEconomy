@@ -44,30 +44,30 @@ public class PayCommand {
 
         MinecraftServer server = source.getServer();
         if (server == null) {
-            PrivateMessage(sender, PLAYER_ONLY_COMMAND, null); // Cannot get server instance
+            PrivateMessage(sender, PLAYER_ONLY_COMMAND); // Cannot get server instance
             return 0;
         }
 
         if (amount <= 0) {
-            PrivateMessage(sender, BANK_PAY_NEGATIVE, server);
+            PrivateMessage(sender, BANK_PAY_NEGATIVE);
             return 0;
         }
 
         ServerPlayerEntity target = server.getPlayerManager().getPlayer(targetName);
 
         if (target == null) {
-            PrivateMessage(sender, String.format(BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName), server);
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName));
             return 0;
         }
 
         if (sender.getUuid().equals(target.getUuid())) {
-            PrivateMessage(sender, BANK_PAY_FAILED_SELF, server);
+            PrivateMessage(sender, BANK_PAY_FAILED_SELF);
             return 0;
         }
 
         long senderBalance = BankStorage.getBalance(sender.getUuid());
         if (senderBalance < amount) {
-            PrivateMessage(sender, String.format(BANK_PAY_FAILED_INSUFFICIENT, targetName, senderBalance), server);
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_INSUFFICIENT, targetName, senderBalance));
             return 0;
         }
 
@@ -75,7 +75,7 @@ public class PayCommand {
             // Withdraw from sender
             boolean removed = BankStorage.removeBalance(sender.getUuid(), amount);
             if (!removed) {
-                PrivateMessage(sender, BANK_PAY_FAILED_ERROR, server);
+                PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
                 return 0;
             }
 
@@ -83,12 +83,12 @@ public class PayCommand {
             BankStorage.addBalance(target.getUuid(), amount);
 
             // Notify both players
-            PrivateMessage(sender, String.format(BANK_PAY_SUCCESS_SENT, amount, targetName), server);
-            PrivateMessage(target, String.format(BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()), server);
+            PrivateMessage(sender, String.format(BANK_PAY_SUCCESS_SENT, amount, targetName));
+            PrivateMessage(target, String.format(BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()));
 
         } catch (Exception e) {
             Logger(2, String.format(PAY_FAILED_ERROR, sender.getName().getString(), targetName, e.getMessage()));
-            PrivateMessage(sender, BANK_PAY_FAILED_ERROR, server);
+            PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
             return 0;
         }
 

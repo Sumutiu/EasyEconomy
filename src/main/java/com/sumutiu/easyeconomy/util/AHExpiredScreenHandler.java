@@ -10,7 +10,6 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.component.type.LoreComponent;
@@ -30,14 +29,12 @@ public class AHExpiredScreenHandler extends ScreenHandler {
 
     private final Inventory inventory;
     private final List<AHStorage.AHListing> expiredListings;
-    private final MinecraftServer server;
     private int currentPage = 0;
 
-    public AHExpiredScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> expiredListings, PlayerEntity player, MinecraftServer server) {
+    public AHExpiredScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> expiredListings, PlayerEntity player) {
         super(ScreenHandlerType.GENERIC_9X6, syncId);
         this.inventory = inventory;
         this.expiredListings = expiredListings;
-        this.server = server;
 
         for (int i = 0; i < SIZE; i++) {
             this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
@@ -146,13 +143,13 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             ItemStack stack = AHStorageHelper.fromListing(listing);
 
             if (stack == null || stack.isEmpty()) {
-                EasyEconomyMessages.PrivateMessage(buyer, AH_BUY_ERROR, this.server);
+                EasyEconomyMessages.PrivateMessage(buyer, AH_BUY_ERROR);
                 drawListings();
                 return;
             }
 
             if (InventoryUtil.noInventorySpace(buyer, stack)) {
-                EasyEconomyMessages.PrivateMessage(buyer, AH_CLAIM_NO_SPACE, this.server);
+                EasyEconomyMessages.PrivateMessage(buyer, AH_CLAIM_NO_SPACE);
                 drawListings();
                 return;
             }
@@ -170,7 +167,7 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             AHStorage.saveListings(player.getUuid(), allListings);
 
             String itemName = stack.getItem().getName().getString();
-            EasyEconomyMessages.PrivateMessage(buyer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), itemName), this.server);
+            EasyEconomyMessages.PrivateMessage(buyer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), itemName));
 
             drawListings();
         }

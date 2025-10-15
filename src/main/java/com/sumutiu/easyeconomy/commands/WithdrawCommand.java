@@ -35,12 +35,12 @@ public class WithdrawCommand {
             balance = BankStorage.getBalance(player.getUuid());
         } catch (Exception e) {
             Logger(2, String.format(BANK_READ_FAILED, player.getUuid(), e.getMessage()));
-            PrivateMessage(player, BANK_READ_FAILED_PRIVATE, source.getServer());
+            PrivateMessage(player, BANK_READ_FAILED_PRIVATE);
             return 0;
         }
 
         if (balance < amount) {
-            PrivateMessage(player, String.format(BANK_BALANCE_INSUFFICIENT, balance), source.getServer());
+            PrivateMessage(player, String.format(BANK_BALANCE_INSUFFICIENT, balance));
             return 0;
         }
 
@@ -53,7 +53,7 @@ public class WithdrawCommand {
         }
 
         if (capacity < amount) {
-            PrivateMessage(player, String.format(BANK_BALANCE_NO_SPACE, amount), source.getServer());
+            PrivateMessage(player, String.format(BANK_BALANCE_NO_SPACE, amount));
             return 0;
         }
 
@@ -61,12 +61,12 @@ public class WithdrawCommand {
         try {
             boolean ok = BankStorage.removeBalance(player.getUuid(), amount);
             if (!ok) {
-                PrivateMessage(player, BANK_BALANCE_ERROR, source.getServer());
+                PrivateMessage(player, BANK_BALANCE_ERROR);
                 return 0;
             }
         } catch (Exception e) {
             Logger(2, String.format(BANK_WITHDRAW_FAILED, player.getUuid(), e.getMessage()));
-            PrivateMessage(player, BANK_WITHDRAW_FAILED_PRIVATE, source.getServer());
+            PrivateMessage(player, BANK_WITHDRAW_FAILED_PRIVATE);
             return 0;
         }
 
@@ -82,7 +82,7 @@ public class WithdrawCommand {
             remaining -= take;
         }
 
-        PrivateMessage(player, String.format(BANK_BALANCE_CONFIRM, amount), source.getServer());
+        PrivateMessage(player, String.format(BANK_BALANCE_CONFIRM, amount));
         return amount;
     }
 }

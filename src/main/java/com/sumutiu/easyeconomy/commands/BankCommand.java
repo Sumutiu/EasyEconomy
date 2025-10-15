@@ -19,7 +19,7 @@ public class BankCommand {
                     }
 
                     long bal = BankStorage.getBalance(player.getUuid());
-                    EasyEconomyMessages.PrivateMessage(player, String.format(EasyEconomyMessages.BANK_BALANCE, bal), source.getServer());
+                    EasyEconomyMessages.PrivateMessage(player, String.format(EasyEconomyMessages.BANK_BALANCE, bal));
                     return 1;
                 })
         );

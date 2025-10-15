@@ -41,17 +41,17 @@ public class DepositCommand {
         }
 
         if (removed <= 0) {
-            PrivateMessage(player, INVENTORY_EMPTY, source.getServer());
+            PrivateMessage(player, INVENTORY_EMPTY);
             return 0;
         }
 
         try {
             BankStorage.addBalance(player.getUuid(), removed);
-            PrivateMessage(player, String.format(BANK_DEPOSIT_QTY, removed), source.getServer());
+            PrivateMessage(player, String.format(BANK_DEPOSIT_QTY, removed));
         } catch (Exception e) {
             // Log with consistent message format
             Logger(2, String.format(BANK_DEPOSIT_FAILED, player.getUuid(), e.getMessage()));
-            PrivateMessage(player, BANK_DEPOSIT_FAILED_PRIVATE, source.getServer());
+            PrivateMessage(player, BANK_DEPOSIT_FAILED_PRIVATE);
             return 0;
         }
 
