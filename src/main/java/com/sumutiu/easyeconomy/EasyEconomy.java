@@ -48,13 +48,13 @@ public class EasyEconomy implements ModInitializer {
 						if (isNewPlayer) {
 							BankStorage.saveToFile(uuid, balance);
 							EasyEconomyMessages.Logger(0, String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
-							EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
+							EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER, server);
 						}
 
 					} catch (Exception e) {
 						EasyEconomyMessages.Logger(2,
 								String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
-						EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
+						EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE, server);
 					}
 				} else {
 					EasyEconomyMessages.Logger(2, EasyEconomyMessages.INVALID_CONNECTION_HANDLER);

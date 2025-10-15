@@ -2,6 +2,7 @@ package com.sumutiu.easyeconomy.util;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -120,8 +121,8 @@ public class EasyEconomyMessages {
     // ----------------------------
     // Player messaging
     // ----------------------------
-    public static void PrivateMessage(ServerPlayerEntity player, String message) {
-        if (isConnected(player)) {
+    public static void PrivateMessage(ServerPlayerEntity player, String message, MinecraftServer server) {
+        if (isConnected(player, server)) {
             player.sendMessage(Text.literal(Mod_ID + ": ")
                     .styled(style -> style.withColor(Formatting.GREEN))
                     .append(Text.literal(message).styled(s -> s.withColor(Formatting.WHITE))), false);
@@ -150,10 +151,10 @@ public class EasyEconomyMessages {
                 .orElse("unknown");
     }
 
-    public static boolean isConnected(ServerPlayerEntity player) {
+    public static boolean isConnected(ServerPlayerEntity player, MinecraftServer server) {
         return player != null
-                && player.getServer() != null
-                && player.getServer().getPlayerManager().getPlayer(player.getUuid()) == player;
+                && server != null
+                && server.getPlayerManager().getPlayer(player.getUuid()) == player;
     }
 
     public static void logAsciiBanner(String banner, String footer) {

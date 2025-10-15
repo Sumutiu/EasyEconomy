@@ -42,32 +42,32 @@ public class PayCommand {
             return 0;
         }
 
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            PrivateMessage(sender, PLAYER_ONLY_COMMAND, null); // Cannot get server instance
+            return 0;
+        }
+
         if (amount <= 0) {
-            PrivateMessage(sender, BANK_PAY_NEGATIVE);
+            PrivateMessage(sender, BANK_PAY_NEGATIVE, server);
             return 0;
         }
 
-        // Null-safe check for server and player manager
-        if (sender.getServer() == null || sender.getServer().getPlayerManager() == null) {
-            PrivateMessage(sender, PLAYER_ONLY_COMMAND);
-            return 0;
-        }
-
-        ServerPlayerEntity target = sender.getServer().getPlayerManager().getPlayer(targetName);
+        ServerPlayerEntity target = server.getPlayerManager().getPlayer(targetName);
 
         if (target == null) {
-            PrivateMessage(sender, String.format(BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName));
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_PLAYER_NOT_FOUND, targetName), server);
             return 0;
         }
 
         if (sender.getUuid().equals(target.getUuid())) {
-            PrivateMessage(sender, BANK_PAY_FAILED_SELF);
+            PrivateMessage(sender, BANK_PAY_FAILED_SELF, server);
             return 0;
         }
 
         long senderBalance = BankStorage.getBalance(sender.getUuid());
         if (senderBalance < amount) {
-            PrivateMessage(sender, String.format(BANK_PAY_FAILED_INSUFFICIENT, targetName, senderBalance));
+            PrivateMessage(sender, String.format(BANK_PAY_FAILED_INSUFFICIENT, targetName, senderBalance), server);
             return 0;
         }
 
@@ -75,7 +75,7 @@ public class PayCommand {
             // Withdraw from sender
             boolean removed = BankStorage.removeBalance(sender.getUuid(), amount);
             if (!removed) {
-                PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
+                PrivateMessage(sender, BANK_PAY_FAILED_ERROR, server);
                 return 0;
             }
 
@@ -83,12 +83,12 @@ public class PayCommand {
             BankStorage.addBalance(target.getUuid(), amount);
 
             // Notify both players
-            PrivateMessage(sender, String.format(BANK_PAY_SUCCESS_SENT, amount, targetName));
-            PrivateMessage(target, String.format(BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()));
+            PrivateMessage(sender, String.format(BANK_PAY_SUCCESS_SENT, amount, targetName), server);
+            PrivateMessage(target, String.format(BANK_PAY_SUCCESS_RECEIVED, amount, sender.getName().getString()), server);
 
         } catch (Exception e) {
             Logger(2, String.format(PAY_FAILED_ERROR, sender.getName().getString(), targetName, e.getMessage()));
-            PrivateMessage(sender, BANK_PAY_FAILED_ERROR);
+            PrivateMessage(sender, BANK_PAY_FAILED_ERROR, server);
             return 0;
         }
 

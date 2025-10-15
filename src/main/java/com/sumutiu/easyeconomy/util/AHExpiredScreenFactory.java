@@ -4,6 +4,7 @@ import com.sumutiu.easyeconomy.storage.AHStorage;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.inventory.SimpleInventory;
@@ -12,7 +13,7 @@ import java.util.List;
 
 public class AHExpiredScreenFactory {
 
-    public static void open(ServerPlayerEntity player) {
+    public static void open(ServerPlayerEntity player, MinecraftServer server) {
         List<AHStorage.AHListing> all = AHStorage.loadListings(player.getUuid());
         List<AHStorage.AHListing> expired = AHStorage.getExpiredListings(all);
 
@@ -25,7 +26,7 @@ public class AHExpiredScreenFactory {
 
             @Override
             public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity playerEntity) {
-                return new AHExpiredScreenHandler(syncId, new SimpleInventory(AHExpiredScreenHandler.SIZE), expired, playerEntity);
+                return new AHExpiredScreenHandler(syncId, new SimpleInventory(AHExpiredScreenHandler.SIZE), expired, playerEntity, server);
             }
         };
 
