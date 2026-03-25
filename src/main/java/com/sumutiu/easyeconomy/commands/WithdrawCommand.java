@@ -3,18 +3,18 @@ package com.sumutiu.easyeconomy.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.sumutiu.easyeconomy.storage.BankStorage;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 
-import static net.minecraft.server.command.CommandManager.argument;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.argument;
+import static net.minecraft.commands.Commands.literal;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class WithdrawCommand {
 
-    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("withdraw")
                 .then(argument("amount", IntegerArgumentType.integer(1))
                         .executes(ctx -> {
@@ -23,8 +23,9 @@ public class WithdrawCommand {
                         })));
     }
 
-    private static int execute(ServerCommandSource source, int amount) {
-        if (!(source.getEntity() instanceof ServerPlayerEntity player)) {
+    private static int execute(CommandSourceStack source, int amount) {
+
+        if (!(source.getEntity() instanceof ServerPlayer player)) {
             Logger(1, PLAYER_ONLY_COMMAND);
             return 0;
         }
@@ -32,9 +33,9 @@ public class WithdrawCommand {
         // Get player balance
         long balance;
         try {
-            balance = BankStorage.getBalance(player.getUuid());
+            balance = BankStorage.getBalance(player.getUUID());
         } catch (Exception e) {
-            Logger(2, String.format(BANK_READ_FAILED, player.getUuid(), e.getMessage()));
+            Logger(2, String.format(BANK_READ_FAILED, player.getUUID(), e.getMessage()));
             PrivateMessage(player, BANK_READ_FAILED_PRIVATE);
             return 0;
         }
@@ -44,12 +45,17 @@ public class WithdrawCommand {
             return 0;
         }
 
-        // Compute available space for diamonds in inventory
+        // Compute available inventory space
         int capacity = 0;
-        for (int i = 0; i < player.getInventory().size(); i++) {
-            ItemStack s = player.getInventory().getStack(i);
-            if (s.isEmpty()) capacity += Items.DIAMOND.getMaxCount();
-            else if (s.getItem() == Items.DIAMOND) capacity += (Items.DIAMOND.getMaxCount() - s.getCount());
+
+        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+            ItemStack s = player.getInventory().getItem(i);
+
+            if (s.isEmpty()) {
+                capacity += new ItemStack(Items.DIAMOND).getMaxStackSize();
+            } else if (s.getItem() == Items.DIAMOND) {
+                capacity += (s.getMaxStackSize() - s.getCount());
+            }
         }
 
         if (capacity < amount) {
@@ -57,28 +63,34 @@ public class WithdrawCommand {
             return 0;
         }
 
-        // Remove balance from bank
+        // Withdraw from bank
         try {
-            boolean ok = BankStorage.removeBalance(player.getUuid(), amount);
+            boolean ok = BankStorage.removeBalance(player.getUUID(), amount);
             if (!ok) {
                 PrivateMessage(player, BANK_BALANCE_ERROR);
                 return 0;
             }
         } catch (Exception e) {
-            Logger(2, String.format(BANK_WITHDRAW_FAILED, player.getUuid(), e.getMessage()));
+            Logger(2, String.format(BANK_WITHDRAW_FAILED, player.getUUID(), e.getMessage()));
             PrivateMessage(player, BANK_WITHDRAW_FAILED_PRIVATE);
             return 0;
         }
 
-        // Give diamonds (split into stacks if needed)
+        // Give diamonds
         int remaining = amount;
+
         while (remaining > 0) {
-            int take = Math.min(remaining, Items.DIAMOND.getMaxCount());
+            int maxStack = new ItemStack(Items.DIAMOND).getMaxStackSize();
+            int take = Math.min(remaining, maxStack);
+
             ItemStack stack = new ItemStack(Items.DIAMOND, take);
-            boolean added = player.getInventory().insertStack(stack);
+
+            boolean added = player.getInventory().add(stack);
+
             if (!added) {
-                player.dropItem(stack, false);
+                player.drop(stack, false);
             }
+
             remaining -= take;
         }
 

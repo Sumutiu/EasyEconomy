@@ -1,22 +1,27 @@
 package com.sumutiu.easyeconomy.util;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 public class InventoryUtil {
-    public static boolean noInventorySpace(ServerPlayerEntity player, ItemStack stackToInsert) {
+
+    public static boolean noInventorySpace(ServerPlayer player, ItemStack stackToInsert) {
         int totalSpace = 0;
+
         for (int i = 0; i < 36; ++i) {
-            ItemStack slotStack = player.getInventory().getStack(i);
+            ItemStack slotStack = player.getInventory().getItem(i);
+
             if (slotStack.isEmpty()) {
-                totalSpace += stackToInsert.getMaxCount();
-            } else if (ItemStack.areItemsAndComponentsEqual(slotStack, stackToInsert)) {
-                totalSpace += slotStack.getMaxCount() - slotStack.getCount();
+                totalSpace += stackToInsert.getMaxStackSize();
+            } else if (ItemStack.isSameItemSameComponents(slotStack, stackToInsert)) {
+                totalSpace += slotStack.getMaxStackSize() - slotStack.getCount();
             }
+
             if (totalSpace >= stackToInsert.getCount()) {
                 return false;
             }
         }
+
         return true;
     }
 }

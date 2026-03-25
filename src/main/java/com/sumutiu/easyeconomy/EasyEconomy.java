@@ -6,7 +6,7 @@ import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.io.File;
 import java.util.UUID;
@@ -18,9 +18,10 @@ public class EasyEconomy implements ModInitializer {
 	public static final File STORAGE_FOLDER = new File("mods/EasyEconomy/Banks");
 	public static final File AH_FOLDER = new File("mods/EasyEconomy/AH");
 
-    @Override
+	@Override
 	public void onInitialize() {
 		if (initPlugin()) {
+
 			// Register commands
 			CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
 				DepositCommand.register(dispatcher);
@@ -30,51 +31,54 @@ public class EasyEconomy implements ModInitializer {
 				AHCommand.register(dispatcher);
 			});
 
-			// Player join: initialize bank and send welcome if new
+			// Player join
 			ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-				if (handler != null && handler.getPlayer() != null) {
-					ServerPlayerEntity player = handler.getPlayer();
-					UUID uuid = player.getUuid();
+                ServerPlayer player = handler.getPlayer();
+                UUID uuid = player.getUUID();
 
-					try {
-						// Get player bank file
-						File playerFile = BankStorage.getPlayerFile(uuid);
-						boolean isNewPlayer = !playerFile.exists();
+                try {
+                    File playerFile = BankStorage.getPlayerFile(uuid);
+                    boolean isNewPlayer = !playerFile.exists();
 
-						// Load balance into memory (0 if file doesn't exist)
-						long balance = BankStorage.getBalance(uuid);
+                    long balance = BankStorage.getBalance(uuid);
 
-						// Force file creation if missing
-						if (isNewPlayer) {
-							BankStorage.saveToFile(uuid, balance);
-							EasyEconomyMessages.Logger(0, String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
-							EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
-						}
+                    if (isNewPlayer) {
+                        BankStorage.saveToFile(uuid, balance);
 
-					} catch (Exception e) {
-						EasyEconomyMessages.Logger(2,
-								String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
-						EasyEconomyMessages.PrivateMessage(player, EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
-					}
-				} else {
-					EasyEconomyMessages.Logger(2, EasyEconomyMessages.INVALID_CONNECTION_HANDLER);
-				}
-			});
+                        EasyEconomyMessages.Logger(0,
+                                String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
 
-			// Player quit: unload bank from memory
-			ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-				if (handler != null && handler.getPlayer() != null) {
-					BankStorage.unloadPlayer(handler.getPlayer().getUuid());
-				}
-			});
+                        EasyEconomyMessages.PrivateMessage(player,
+                                EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
+                    }
+
+                } catch (Exception e) {
+                    EasyEconomyMessages.Logger(2,
+                            String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
+
+                    EasyEconomyMessages.PrivateMessage(player,
+                            EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
+                }
+
+            });
+
+			// Player quit
+			ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+					BankStorage.unloadPlayer(handler.getPlayer().getUUID())
+			);
+
 		} else {
 			Logger(2, MOD_INIT_FAILED);
 		}
 	}
 
-	// Function that initializes the plugin storage
+	// Initialize storage
 	private static boolean initPlugin() {
-		logAsciiBanner(MOD_ASCII_BANNER, Mod_ID + ": V" + getModVersion() + " - Because emeralds are overrated!");
+		logAsciiBanner(
+				MOD_ASCII_BANNER,
+				Mod_ID + ": V" + getModVersion() + " - Because emeralds are overrated!"
+		);
+
 		if (!STORAGE_FOLDER.exists() || !AH_FOLDER.exists()) {
 			if (STORAGE_FOLDER.mkdirs() && AH_FOLDER.mkdirs()) {
 				Logger(0, MAIN_FOLDER_CREATED);

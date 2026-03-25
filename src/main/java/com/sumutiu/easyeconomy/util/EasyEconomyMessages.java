@@ -2,11 +2,10 @@ package com.sumutiu.easyeconomy.util;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +26,7 @@ public class EasyEconomyMessages {
         """;
 
     public static final String Mod_ID = "[EasyEconomy]";
-    public static final String INVALID_CONNECTION_HANDLER = "Invalid connection handler or player during join event.";
+    //public static final String INVALID_CONNECTION_HANDLER = "Invalid connection handler or player during join event.";
     public static final String PLAYER_ONLY_COMMAND = "This command can only be used by players.";
 
     // ----------------------------
@@ -122,11 +121,14 @@ public class EasyEconomyMessages {
     // ----------------------------
     // Player messaging
     // ----------------------------
-    public static void PrivateMessage(ServerPlayerEntity player, String message) {
+    public static void PrivateMessage(ServerPlayer player, String message) {
         if (isConnected(player)) {
-            player.sendMessage(Text.literal(Mod_ID + ": ")
-                    .styled(style -> style.withColor(Formatting.GREEN))
-                    .append(Text.literal(message).styled(s -> s.withColor(Formatting.WHITE))), false);
+            player.sendSystemMessage(
+                    Component.literal(Mod_ID + ": ")
+                            .withStyle(style -> style.withColor(ChatFormatting.GREEN))
+                            .append(Component.literal(message)
+                                    .withStyle(style -> style.withColor(ChatFormatting.WHITE)))
+            );
         }
     }
 
@@ -152,25 +154,17 @@ public class EasyEconomyMessages {
                 .orElse("unknown");
     }
 
-    public static boolean isConnected(ServerPlayerEntity player) {
-        if (player == null) {
-            return false;
-        }
-        ServerWorld world = player.getEntityWorld();
-        if (!(world instanceof ServerWorld)) {
-            return false;
-        }
-        MinecraftServer server = world.getServer();
-        return server.getPlayerManager().getPlayer(player.getUuid()) == player;
+    public static boolean isConnected(ServerPlayer player) {
+        return player != null && player.connection.getPlayer() == player;
     }
 
     public static void logAsciiBanner(String banner, String footer) {
-        LOGGER.info(""); // Empty line before
+        LOGGER.info("");
         for (String line : banner.stripTrailing().split("\n")) {
             LOGGER.info(line);
         }
-        LOGGER.info(""); // Empty line before
+        LOGGER.info("");
         LOGGER.info(footer);
-        LOGGER.info(""); // Empty line after
+        LOGGER.info("");
     }
 }

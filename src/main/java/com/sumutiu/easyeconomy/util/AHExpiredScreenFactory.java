@@ -1,34 +1,41 @@
 package com.sumutiu.easyeconomy.util;
 
 import com.sumutiu.easyeconomy.storage.AHStorage;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
 public class AHExpiredScreenFactory {
 
-    public static void open(ServerPlayerEntity player) {
-        List<AHStorage.AHListing> all = AHStorage.loadListings(player.getUuid());
+    public static void open(ServerPlayer player) {
+        List<AHStorage.AHListing> all = AHStorage.loadListings(player.getUUID());
         List<AHStorage.AHListing> expired = AHStorage.getExpiredListings(all);
 
-        // Wrap in NamedScreenHandlerFactory
-        NamedScreenHandlerFactory factory = new NamedScreenHandlerFactory() {
+        MenuProvider factory = new MenuProvider() {
+
             @Override
-            public Text getDisplayName() {
-                return Text.literal("Expired AH Listings");
+            public @NonNull Component getDisplayName() {
+                return Component.literal("Expired AH Listings");
             }
 
             @Override
-            public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity playerEntity) {
-                return new AHExpiredScreenHandler(syncId, new SimpleInventory(AHExpiredScreenHandler.SIZE), expired, playerEntity);
+            public AbstractContainerMenu createMenu(int syncId, @NonNull Inventory playerInventory, @NonNull Player playerEntity) {
+                return new AHExpiredScreenHandler(
+                        syncId,
+                        new SimpleContainer(AHExpiredScreenHandler.SIZE),
+                        expired,
+                        playerEntity
+                );
             }
         };
 
-        player.openHandledScreen(factory);
+        player.openMenu(factory);
     }
 }

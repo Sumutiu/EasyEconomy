@@ -2,12 +2,14 @@ package com.sumutiu.easyeconomy.util;
 
 import com.sumutiu.easyeconomy.storage.AHStorage;
 import com.sumutiu.easyeconomy.storage.AHStorageHelper;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.SimpleInventory;
-import net.minecraft.screen.NamedScreenHandlerFactory;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -15,7 +17,7 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHScreenFactory {
 
-    public static void open(ServerPlayerEntity player) {
+    public static void open(ServerPlayer player) {
         List<AHStorage.AHListing> allActive = AHStorageHelper.getAllActiveListings();
 
         if (allActive.isEmpty()) {
@@ -23,18 +25,24 @@ public class AHScreenFactory {
             return;
         }
 
-        NamedScreenHandlerFactory factory = new NamedScreenHandlerFactory() {
+        MenuProvider factory = new MenuProvider() {
+
             @Override
-            public Text getDisplayName() {
-                return Text.literal("Auction House");
+            public @NonNull Component getDisplayName() {
+                return Component.literal("Auction House");
             }
 
             @Override
-            public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, net.minecraft.entity.player.PlayerEntity playerEntity) {
-                return new AHScreenHandler(syncId, new SimpleInventory(AHScreenHandler.SIZE), allActive, playerEntity);
+            public AbstractContainerMenu createMenu(int syncId, @NonNull Inventory playerInventory, @NonNull Player playerEntity) {
+                return new AHScreenHandler(
+                        syncId,
+                        new SimpleContainer(AHScreenHandler.SIZE),
+                        allActive,
+                        playerEntity
+                );
             }
         };
 
-        player.openHandledScreen(factory);
+        player.openMenu(factory);
     }
 }

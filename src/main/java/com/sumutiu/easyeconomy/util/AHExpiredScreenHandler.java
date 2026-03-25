@@ -2,128 +2,71 @@ package com.sumutiu.easyeconomy.util;
 
 import com.sumutiu.easyeconomy.storage.AHStorage;
 import com.sumutiu.easyeconomy.storage.AHStorageHelper;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.screen.slot.Slot;
-import net.minecraft.screen.slot.SlotActionType;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.component.type.LoreComponent;
-import java.util.ArrayList;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.Container;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.network.chat.Component;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.component.ItemLore;
+import org.jspecify.annotations.NonNull;
+
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
-public class AHExpiredScreenHandler extends ScreenHandler {
+public class AHExpiredScreenHandler extends AbstractContainerMenu {
 
     public static final int ROWS = 6;
     public static final int COLUMNS = 9;
     public static final int SIZE = ROWS * COLUMNS;
     public static final int ITEMS_PER_PAGE = 45;
 
-    private final Inventory inventory;
+    private final Container inventory;
     private final List<AHStorage.AHListing> expiredListings;
     private int currentPage = 0;
 
-    public AHExpiredScreenHandler(int syncId, Inventory inventory, List<AHStorage.AHListing> expiredListings, PlayerEntity player) {
-        super(ScreenHandlerType.GENERIC_9X6, syncId);
+    public AHExpiredScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> expiredListings, Player player) {
+        super(MenuType.GENERIC_9x6, syncId);
         this.inventory = inventory;
         this.expiredListings = expiredListings;
 
+        // Auction house slots with click handling
         for (int i = 0; i < SIZE; i++) {
-            this.addSlot(new Slot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
+            this.addSlot(new ClickableSlot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
                 @Override
-                public boolean canTakeItems(PlayerEntity playerEntity) {
-                    return false;
-                }
-
-                @Override
-                public boolean canInsert(ItemStack stack) {
-                    return false;
+                protected void onClick(Player player) {
+                    handleSlotClick(player, this.index);
                 }
             });
         }
 
+        // Player inventory
         int playerInvY = 140;
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                this.addSlot(new Slot(player.getInventory(), col + row * 9 + 9, 8 + col * 18, playerInvY + row * 18));
+                this.addSlot(new Slot(player.getInventory(), col + row * 9 + 9,
+                        8 + col * 18, playerInvY + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            this.addSlot(new Slot(player.getInventory(), col, 8 + col * 18, playerInvY + 58));
+            this.addSlot(new Slot(player.getInventory(), col,
+                    8 + col * 18, playerInvY + 58));
         }
 
         drawListings();
     }
 
-    private void drawListings() {
-        for (int i = 0; i < SIZE; i++) {
-            inventory.setStack(i, ItemStack.EMPTY);
-        }
+    private void handleSlotClick(Player player, int slotIndex) {
+        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        int startIndex = currentPage * ITEMS_PER_PAGE;
-        for (int i = 0; i < ITEMS_PER_PAGE; i++) {
-            int listingIndex = startIndex + i;
-            if (listingIndex < expiredListings.size()) {
-                AHStorage.AHListing listing = expiredListings.get(listingIndex);
-                ItemStack stack = AHStorageHelper.fromListing(listing);
-                if (stack == null) stack = ItemStack.EMPTY;
-
-                String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
-                String date = sdf.format(new Date(listing.timestamp));
-
-                Text itemName = Text.literal(stack.getCount() + " x " + stack.getItem().getName(stack).getString());
-                stack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, itemName);
-
-                List<Text> loreLines = new ArrayList<>();
-                loreLines.add(Text.literal("Seller: " + sellerName));
-                loreLines.add(Text.literal("Expired: " + date));
-
-                stack.set(net.minecraft.component.DataComponentTypes.LORE, new LoreComponent(loreLines));
-                inventory.setStack(i, stack);
-            }
-        }
-
-        int maxPage = (expiredListings.size() - 1) / ITEMS_PER_PAGE;
-
-        if (currentPage > 0) {
-            ItemStack prevStack = new ItemStack(Items.ARROW);
-            prevStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Previous Page"));
-            inventory.setStack(45, prevStack);
-        }
-
-        if (currentPage < maxPage) {
-            ItemStack nextStack = new ItemStack(Items.ARROW);
-            nextStack.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Next Page"));
-            inventory.setStack(53, nextStack);
-        }
-
-        ItemStack pageInfo = new ItemStack(Items.PAPER);
-        pageInfo.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal("Page " + (currentPage + 1) + " of " + (maxPage + 1)));
-        inventory.setStack(49, pageInfo);
-
-        sendContentUpdates();
-    }
-
-    @Override
-    public boolean canUse(PlayerEntity player) {
-        return true;
-    }
-
-    @Override
-    public void onSlotClick(int slotIndex, int button, SlotActionType actionType, PlayerEntity player) {
-        if (!(player instanceof ServerPlayerEntity buyer)) {
-            return;
-        }
-
+        // ---- Pagination ----
         if (slotIndex == 45 && currentPage > 0) {
             currentPage--;
             drawListings();
@@ -135,63 +78,116 @@ public class AHExpiredScreenHandler extends ScreenHandler {
             return;
         }
 
+        // ---- Claim expired item ----
         int listingIndex = currentPage * ITEMS_PER_PAGE + slotIndex;
-        if (listingIndex < 0 || listingIndex >= expiredListings.size()) return;
-
-        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE) {
+        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < expiredListings.size()) {
             AHStorage.AHListing listing = expiredListings.get(listingIndex);
             ItemStack stack = AHStorageHelper.fromListing(listing);
 
             if (stack == null || stack.isEmpty()) {
-                EasyEconomyMessages.PrivateMessage(buyer, AH_BUY_ERROR);
+                PrivateMessage(serverPlayer, AH_BUY_ERROR);
                 drawListings();
                 return;
             }
 
-            if (InventoryUtil.noInventorySpace(buyer, stack)) {
-                EasyEconomyMessages.PrivateMessage(buyer, AH_CLAIM_NO_SPACE);
+            if (InventoryUtil.noInventorySpace(serverPlayer, stack)) {
+                PrivateMessage(serverPlayer, AH_CLAIM_NO_SPACE);
                 drawListings();
                 return;
             }
 
             ItemStack stackToInsert = stack.copy();
-            if (!buyer.getInventory().insertStack(stackToInsert)) {
-                buyer.dropItem(stackToInsert, false);
+            if (!serverPlayer.getInventory().add(stackToInsert)) {
+                serverPlayer.drop(stackToInsert, false);
             }
-            buyer.playerScreenHandler.sendContentUpdates();
+            this.broadcastChanges();
 
             expiredListings.remove(listingIndex);
 
-            List<AHStorage.AHListing> allListings = AHStorage.loadListings(player.getUuid());
+            List<AHStorage.AHListing> allListings = AHStorage.loadListings(serverPlayer.getUUID());
             allListings.removeIf(l -> l.timestamp == listing.timestamp && l.seller.equals(listing.seller));
-            AHStorage.saveListings(player.getUuid(), allListings);
+            AHStorage.saveListings(serverPlayer.getUUID(), allListings);
 
-            String itemName = stack.getItem().getName().getString();
-            EasyEconomyMessages.PrivateMessage(buyer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), itemName));
+            PrivateMessage(serverPlayer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), stack.getHoverName().getString()));
 
             drawListings();
         }
     }
 
-    @Override
-    public ItemStack quickMove(PlayerEntity player, int index) {
-        if (index < SIZE) {
-            return ItemStack.EMPTY;
-        }
-        Slot slot = this.slots.get(index);
-        if (slot.hasStack()) {
-            ItemStack originalStack = slot.getStack();
-            ItemStack newStack = originalStack.copy();
-            if (!this.insertItem(newStack, 0, SIZE, false)) {
-                return ItemStack.EMPTY;
-            }
+    private void drawListings() {
+        for (int i = 0; i < SIZE; i++) inventory.setItem(i, ItemStack.EMPTY);
 
-            if (originalStack.isEmpty()) {
-                slot.setStack(ItemStack.EMPTY);
-            } else {
-                slot.markDirty();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        int startIndex = currentPage * ITEMS_PER_PAGE;
+
+        for (int i = 0; i < ITEMS_PER_PAGE; i++) {
+            int listingIndex = startIndex + i;
+
+            if (listingIndex < expiredListings.size()) {
+                AHStorage.AHListing listing = expiredListings.get(listingIndex);
+                ItemStack stack = AHStorageHelper.fromListing(listing);
+                if (stack == null) stack = ItemStack.EMPTY;
+
+                String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
+                String date = sdf.format(new Date(listing.timestamp));
+
+                stack.set(DataComponents.CUSTOM_NAME,
+                        Component.literal(stack.getCount() + " x " + stack.getHoverName().getString()));
+
+                List<Component> loreLines = new ArrayList<>();
+                loreLines.add(Component.literal("Seller: " + sellerName));
+                loreLines.add(Component.literal("Expired: " + date));
+                stack.set(DataComponents.LORE, new ItemLore(loreLines));
+
+                inventory.setItem(i, stack);
             }
         }
-        return ItemStack.EMPTY;
+
+        int maxPage = (expiredListings.size() - 1) / ITEMS_PER_PAGE;
+
+        if (currentPage > 0) {
+            ItemStack prevStack = new ItemStack(Items.ARROW);
+            prevStack.set(DataComponents.CUSTOM_NAME, Component.literal("Previous Page"));
+            inventory.setItem(45, prevStack);
+        }
+        if (currentPage < maxPage) {
+            ItemStack nextStack = new ItemStack(Items.ARROW);
+            nextStack.set(DataComponents.CUSTOM_NAME, Component.literal("Next Page"));
+            inventory.setItem(53, nextStack);
+        }
+
+        ItemStack pageInfo = new ItemStack(Items.PAPER);
+        pageInfo.set(DataComponents.CUSTOM_NAME,
+                Component.literal("Page " + (currentPage + 1) + " of " + (maxPage + 1)));
+        inventory.setItem(49, pageInfo);
+
+        broadcastChanges();
+    }
+
+    @Override
+    public boolean stillValid(@NonNull Player player) { return true; }
+
+    @Override
+    public @NonNull ItemStack quickMoveStack(@NonNull Player player, int index) { return ItemStack.EMPTY; }
+
+    // ---------------- CUSTOM CLICKABLE SLOT ----------------
+    private abstract static class ClickableSlot extends Slot {
+        protected final int index;
+
+        public ClickableSlot(Container container, int index, int x, int y) {
+            super(container, index, x, y);
+            this.index = index;
+        }
+
+        protected abstract void onClick(Player player);
+
+        @Override
+        public boolean mayPickup(@NonNull Player player) {
+            onClick(player);
+            return false;
+        }
+
+        @Override
+        public boolean mayPlace(@NonNull ItemStack stack) { return false; }
     }
 }
