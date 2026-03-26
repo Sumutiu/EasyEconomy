@@ -23,7 +23,7 @@ public class EasyEconomy implements ModInitializer {
 		if (initPlugin()) {
 
 			// Register commands
-			CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> {
 				DepositCommand.register(dispatcher);
 				WithdrawCommand.register(dispatcher);
 				BankCommand.register(dispatcher);
@@ -32,7 +32,7 @@ public class EasyEconomy implements ModInitializer {
 			});
 
 			// Player join
-			ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> {
                 ServerPlayer player = handler.getPlayer();
                 UUID uuid = player.getUUID();
 
@@ -63,7 +63,7 @@ public class EasyEconomy implements ModInitializer {
             });
 
 			// Player quit
-			ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+			ServerPlayConnectionEvents.DISCONNECT.register((handler, _) ->
 					BankStorage.unloadPlayer(handler.getPlayer().getUUID())
 			);
 
