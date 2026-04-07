@@ -3,12 +3,17 @@ package com.sumutiu.easyeconomy;
 import com.sumutiu.easyeconomy.commands.*;
 import com.sumutiu.easyeconomy.storage.BankStorage;
 import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
+import eu.pb4.placeholders.api.PlaceholderResult;
+import eu.pb4.placeholders.api.Placeholders;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
@@ -21,6 +26,9 @@ public class EasyEconomy implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		if (initPlugin()) {
+
+			// Register player balance placeholder
+			registerBalancePlaceholder();
 
 			// Register commands
 			CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> {
@@ -71,6 +79,26 @@ public class EasyEconomy implements ModInitializer {
 			Logger(2, MOD_INIT_FAILED);
 		}
 	}
+
+	// Registers player balance placeholder
+	private void registerBalancePlaceholder() {
+		Placeholders.registerCommon(
+				Identifier.fromNamespaceAndPath("easyeconomy", "balance"),
+				(ctx, _) -> {
+
+					if (!ctx.hasPlayer()) {
+						return PlaceholderResult.invalid("No player");
+					}
+
+					long balance = BankStorage.getBalance(Objects.requireNonNull(ctx.player()).getUUID());
+
+					return PlaceholderResult.value(
+							Component.literal(String.valueOf(balance))
+					);
+				}
+		);
+	}
+
 
 	// Initialize storage
 	private static boolean initPlugin() {
