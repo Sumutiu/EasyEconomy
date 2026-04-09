@@ -30,12 +30,14 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
 
     private final Container inventory;
     private final List<AHStorage.AHListing> expiredListings;
+    private final Player player;
     private int currentPage = 0;
 
     public AHExpiredScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> expiredListings, Player player) {
         super(MenuType.GENERIC_9x6, syncId);
         this.inventory = inventory;
         this.expiredListings = expiredListings;
+        this.player = player;
 
         // Auction house slots with click handling
         for (int i = 0; i < SIZE; i++) {
@@ -82,7 +84,7 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
         int listingIndex = currentPage * ITEMS_PER_PAGE + slotIndex;
         if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < expiredListings.size()) {
             AHStorage.AHListing listing = expiredListings.get(listingIndex);
-            ItemStack stack = AHStorageHelper.fromListing(listing);
+            ItemStack stack = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
 
             if (stack == null || stack.isEmpty()) {
                 PrivateMessage(serverPlayer, AH_BUY_ERROR);
@@ -125,7 +127,7 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
 
             if (listingIndex < expiredListings.size()) {
                 AHStorage.AHListing listing = expiredListings.get(listingIndex);
-                ItemStack stack = AHStorageHelper.fromListing(listing);
+                ItemStack stack = AHStorageHelper.fromListing(listing, player.registryAccess());
                 if (stack == null) stack = ItemStack.EMPTY;
 
                 String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";

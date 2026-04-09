@@ -31,6 +31,7 @@ public class AHScreenHandler extends AbstractContainerMenu {
 
     private final Container inventory;
     private final List<AHStorage.AHListing> listings;
+    private final Player player;
 
     private boolean inConfirmation = false;
     private int confirmSlot = -1;
@@ -40,6 +41,7 @@ public class AHScreenHandler extends AbstractContainerMenu {
         super(MenuType.GENERIC_9x6, syncId);
         this.inventory = inventory;
         this.listings = listings;
+        this.player = player;
 
         // ---------------- Auction House Slots ----------------
         for (int i = 0; i < SIZE; i++) {
@@ -124,7 +126,7 @@ public class AHScreenHandler extends AbstractContainerMenu {
         inConfirmation = false;
 
         AHStorage.AHListing listing = listings.get(confirmSlot);
-        ItemStack purchased = AHStorageHelper.fromListing(listing);
+        ItemStack purchased = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
 
         if (purchased == null || purchased.isEmpty()) {
             PrivateMessage(serverPlayer, AH_BUY_ERROR);
@@ -210,7 +212,7 @@ public class AHScreenHandler extends AbstractContainerMenu {
             if (listingIndex >= listings.size()) continue;
 
             AHStorage.AHListing listing = listings.get(listingIndex);
-            ItemStack stack = AHStorageHelper.fromListing(listing);
+            ItemStack stack = AHStorageHelper.fromListing(listing, player.registryAccess());
             if (stack == null) stack = ItemStack.EMPTY;
 
             String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
@@ -274,7 +276,7 @@ public class AHScreenHandler extends AbstractContainerMenu {
         }
 
         AHStorage.AHListing listing = listings.get(confirmSlot);
-        inventory.setItem(22, AHStorageHelper.fromListing(listing));
+        inventory.setItem(22, AHStorageHelper.fromListing(listing, player.registryAccess()));
 
         broadcastChanges();
     }

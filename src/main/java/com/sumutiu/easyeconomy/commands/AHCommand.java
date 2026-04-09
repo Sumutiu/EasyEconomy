@@ -63,13 +63,15 @@ public class AHCommand {
         // Item info BEFORE modifying stack
         String itemName = held.getHoverName().getString();
         String itemId = BuiltInRegistries.ITEM.getKey(held.getItem()).toString();
+        String itemNbt = held.save(player.registryAccess()).toString();
 
         AHStorage.AHListing listing = new AHStorage.AHListing(
                 itemId,
                 qty,
                 price,
                 player.getUUID(),
-                player.getName().getString()
+                player.getName().getString(),
+                itemNbt
         );
 
         var listings = AHStorage.loadListings(player.getUUID());

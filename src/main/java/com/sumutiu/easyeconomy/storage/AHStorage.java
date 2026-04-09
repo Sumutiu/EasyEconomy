@@ -20,14 +20,16 @@ public class AHStorage {
         public long timestamp; // epoch millis
         public UUID seller;
         public String sellerName;
+        public String nbt; // Serialized ItemStack SNBT
 
-        public AHListing(String itemId, int quantity, long price, UUID seller, String sellerName) {
+        public AHListing(String itemId, int quantity, long price, UUID seller, String sellerName, String nbt) {
             this.itemId = itemId;
             this.quantity = quantity;
             this.price = price;
             this.timestamp = System.currentTimeMillis();
             this.seller = seller;
             this.sellerName = sellerName;
+            this.nbt = nbt;
         }
     }
 
