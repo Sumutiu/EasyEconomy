@@ -1,6 +1,11 @@
 package com.sumutiu.easyeconomy.storage;
 
-import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -10,7 +15,6 @@ import net.minecraft.resources.Identifier;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
@@ -21,32 +25,57 @@ public class AHStorageHelper {
      * Converts an AHListing into a proper ItemStack.
      * Returns ItemStack.EMPTY if anything is invalid.
      */
-    public static ItemStack fromListing(AHStorage.AHListing listing) {
+    public static ItemStack fromListing(AHStorage.AHListing listing, HolderLookup.Provider registries) {
         try {
-            if (listing == null || listing.itemId == null) return ItemStack.EMPTY;
+            if (listing == null) return ItemStack.EMPTY;
 
-            Identifier id = Identifier.tryParse(listing.itemId);
-            if (id == null) {
-                Logger(1, String.format(AH_INVALID_ID, listing.itemId));
-                return ItemStack.EMPTY;
+            ItemStack stack = ItemStack.EMPTY;
+
+            // Try loading from NBT first to preserve components/enchantments
+            if (listing.nbt != null && !listing.nbt.isEmpty() && registries != null) {
+                try {
+                    CompoundTag tag = TagParser.parseCompoundFully(listing.nbt);
+
+                    RegistryOps<Tag> ops =
+                            registries.createSerializationContext(NbtOps.INSTANCE);
+
+                    stack = ItemStack.CODEC
+                            .parse(ops, tag)
+                            .result()
+                            .orElse(ItemStack.EMPTY);
+
+                    // Ensure correct quantity from listing
+                    if (!stack.isEmpty()) {
+                        stack.setCount(Math.max(1, listing.quantity));
+                    }
+
+                } catch (Exception e) {
+                    Logger(2, String.format(AH_ID_NBT_ERROR, e.getMessage()));
+                }
             }
 
-            Optional<Holder.Reference<Item>> holder = BuiltInRegistries.ITEM.get(id);
+            // Fallback for older listings or if NBT loading failed
+            if (stack.isEmpty()) {
+                if (listing.itemId == null) return ItemStack.EMPTY;
 
-            if (holder.isEmpty()) {
-                Logger(1, String.format(AH_ID_NOT_FOUND, listing.itemId));
-                return ItemStack.EMPTY;
+                Identifier id = Identifier.tryParse(listing.itemId);
+                if (id == null) {
+                    Logger(1, String.format(AH_INVALID_ID, listing.itemId));
+                    return ItemStack.EMPTY;
+                }
+
+                Item item = BuiltInRegistries.ITEM.get(id).orElseThrow().value();
+
+                if (item == Items.AIR) {
+                    Logger(1, String.format(AH_ID_NOT_FOUND, listing.itemId));
+                    return ItemStack.EMPTY;
+                }
+
+                int qty = Math.max(1, listing.quantity);
+                stack = new ItemStack(item, qty);
             }
 
-            Item item = holder.get().value();
-
-            if (item == Items.AIR) {
-                Logger(1, String.format(AH_ID_NOT_FOUND, listing.itemId));
-                return ItemStack.EMPTY;
-            }
-
-            int qty = Math.max(1, listing.quantity);
-            return new ItemStack(item, qty);
+            return stack;
 
         } catch (Exception e) {
             Logger(2, String.format(AH_ID_ITEMSTACK_ERROR, e.getMessage()));

@@ -7,6 +7,9 @@ import com.sumutiu.easyeconomy.util.AHExpiredScreenFactory;
 import com.sumutiu.easyeconomy.util.AHScreenFactory;
 import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -63,13 +66,22 @@ public class AHCommand {
         // Item info BEFORE modifying stack
         String itemName = held.getHoverName().getString();
         String itemId = BuiltInRegistries.ITEM.getKey(held.getItem()).toString();
+        RegistryOps<Tag> ops =
+                player.level().registryAccess().createSerializationContext(NbtOps.INSTANCE);
+
+        Tag tag = ItemStack.CODEC
+                .encodeStart(ops, held)
+                .getOrThrow();
+
+        String itemNbt = tag.toString();
 
         AHStorage.AHListing listing = new AHStorage.AHListing(
                 itemId,
                 qty,
                 price,
                 player.getUUID(),
-                player.getName().getString()
+                player.getName().getString(),
+                itemNbt
         );
 
         var listings = AHStorage.loadListings(player.getUUID());

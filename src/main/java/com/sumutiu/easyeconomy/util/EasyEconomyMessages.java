@@ -108,6 +108,7 @@ public class EasyEconomyMessages {
     public static final String AH_INVALID_ID = "Invalid item ID in listing: %s.";
     public static final String AH_ID_NOT_FOUND = "Item not found for ID: %s.";
     public static final String AH_ID_ITEMSTACK_ERROR = "Error converting listing to ItemStack: %s.";
+    public static final String AH_ID_NBT_ERROR = "Failed to parse item NBT: %s.";
     public static final String AH_FILE_ERROR = "Could not list files in folder: %s.";
     public static final String AH_FOLDER_NOT_FOUND = "Folder not found: %s.";
     public static final String AH_FILE_NAME_ERROR = "Skipping file with unexpected name: %s.";
