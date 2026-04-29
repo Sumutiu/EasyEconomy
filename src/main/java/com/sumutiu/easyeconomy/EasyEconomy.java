@@ -92,6 +92,10 @@ public class EasyEconomy implements ModInitializer {
 				BankStorage.unloadPlayer(handler.getPlayer().getUUID());
 			}
 		});
+
+		ServerLifecycleEvents.SERVER_STOPPED.register(_ ->
+				EasyEconomyInitialized = false
+		);
 	}
 
 	// Registers player balance placeholder
