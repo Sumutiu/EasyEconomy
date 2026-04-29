@@ -7,8 +7,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
 import static com.sumutiu.easyeconomy.EasyEconomy.EasyEconomyInitialized;
-import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.MOD_INIT_NOT_READY;
-import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.PrivateMessage;
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 import static net.minecraft.commands.Commands.literal;
 
 public class BankCommand {
@@ -19,16 +18,13 @@ public class BankCommand {
 
                     CommandSourceStack source = ctx.getSource();
                     if (!(source.getEntity() instanceof ServerPlayer player)) {
-                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                        Logger(1, PLAYER_ONLY_COMMAND);
                         return 0;
                     }
 
                     if (EasyEconomyInitialized) {
                         long bal = BankStorage.getBalance(player.getUUID());
-                        EasyEconomyMessages.PrivateMessage(
-                                player,
-                                String.format(EasyEconomyMessages.BANK_BALANCE, bal)
-                        );
+                        EasyEconomyMessages.PrivateMessage(player, String.format(BANK_BALANCE, bal));
                         return 1;
                     } else {
                         PrivateMessage(player, MOD_INIT_NOT_READY);
