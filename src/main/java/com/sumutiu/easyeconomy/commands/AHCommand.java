@@ -5,7 +5,6 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.sumutiu.easyeconomy.storage.AHStorage;
 import com.sumutiu.easyeconomy.util.AHExpiredScreenFactory;
 import com.sumutiu.easyeconomy.util.AHScreenFactory;
-import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
@@ -28,7 +27,7 @@ public class AHCommand {
 
                     CommandSourceStack source = ctx.getSource();
                     if (!(source.getEntity() instanceof ServerPlayer player)) {
-                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                        Logger(1, PLAYER_ONLY_COMMAND);
                         return 0;
                     }
 
@@ -46,7 +45,7 @@ public class AHCommand {
 
                                     CommandSourceStack source = ctx.getSource();
                                     if (!(source.getEntity() instanceof ServerPlayer player)) {
-                                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                                        Logger(1, PLAYER_ONLY_COMMAND);
                                         return 0;
                                     }
 
@@ -65,7 +64,7 @@ public class AHCommand {
 
                             CommandSourceStack source = ctx.getSource();
                             if (!(source.getEntity() instanceof ServerPlayer player)) {
-                                EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                                Logger(1, PLAYER_ONLY_COMMAND);
                                 return 0;
                             }
 
@@ -86,12 +85,12 @@ public class AHCommand {
         ItemStack held = player.getMainHandItem();
 
         if (held.isEmpty()) {
-            EasyEconomyMessages.PrivateMessage(player, AH_SELL_EMPTY);
+            PrivateMessage(player, AH_SELL_EMPTY);
             return 0;
         }
 
         if (price <= 0) {
-            EasyEconomyMessages.PrivateMessage(player, AH_SELL_NO_PRICE);
+            PrivateMessage(player, AH_SELL_NO_PRICE);
             return 0;
         }
 
@@ -103,9 +102,7 @@ public class AHCommand {
         RegistryOps<Tag> ops =
                 player.level().registryAccess().createSerializationContext(NbtOps.INSTANCE);
 
-        Tag tag = ItemStack.CODEC
-                .encodeStart(ops, held)
-                .getOrThrow();
+        Tag tag = ItemStack.CODEC.encodeStart(ops, held).getOrThrow();
 
         String itemNbt = tag.toString();
 
@@ -124,10 +121,7 @@ public class AHCommand {
 
         held.shrink(qty); // remove all items from hand
 
-        EasyEconomyMessages.PrivateMessage(
-                player,
-                String.format(AH_SELL_CONFIRMATION, qty, itemName, price)
-        );
+        PrivateMessage(player, String.format(AH_SELL_CONFIRMATION, qty, itemName, price));
 
         return SINGLE_SUCCESS;
     }
