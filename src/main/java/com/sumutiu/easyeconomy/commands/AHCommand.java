@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
+import static com.sumutiu.easyeconomy.EasyEconomy.EasyEconomyInitialized;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -24,24 +25,57 @@ public class AHCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("ah")
                 .executes(ctx -> {
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                    AHScreenFactory.open(player);
-                    return SINGLE_SUCCESS;
+
+                    CommandSourceStack source = ctx.getSource();
+                    if (!(source.getEntity() instanceof ServerPlayer player)) {
+                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                        return 0;
+                    }
+
+                    if (EasyEconomyInitialized) {
+                        AHScreenFactory.open(player);
+                        return SINGLE_SUCCESS;
+                    } else {
+                        PrivateMessage(player, MOD_INIT_NOT_READY);
+                        return 0;
+                    }
                 })
                 .then(literal("sell")
                         .then(argument("price", IntegerArgumentType.integer(1))
                                 .executes(ctx -> {
-                                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                                    long price = IntegerArgumentType.getInteger(ctx, "price");
-                                    return sellItem(player, price);
+
+                                    CommandSourceStack source = ctx.getSource();
+                                    if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                                        return 0;
+                                    }
+
+                                    if (EasyEconomyInitialized) {
+                                        long price = IntegerArgumentType.getInteger(ctx, "price");
+                                        return sellItem(player, price);
+                                    } else {
+                                        PrivateMessage(player, MOD_INIT_NOT_READY);
+                                        return 0;
+                                    }
                                 })
                         )
                 )
                 .then(literal("expired")
                         .executes(ctx -> {
-                            ServerPlayer player = ctx.getSource().getPlayerOrException();
-                            AHExpiredScreenFactory.open(player);
-                            return SINGLE_SUCCESS;
+
+                            CommandSourceStack source = ctx.getSource();
+                            if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                                return 0;
+                            }
+
+                            if (EasyEconomyInitialized) {
+                                AHExpiredScreenFactory.open(player);
+                                return SINGLE_SUCCESS;
+                            } else {
+                                PrivateMessage(player, MOD_INIT_NOT_READY);
+                                return 0;
+                            }
                         })
                 )
         );

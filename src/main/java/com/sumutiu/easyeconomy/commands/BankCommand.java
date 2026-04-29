@@ -6,6 +6,9 @@ import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
+import static com.sumutiu.easyeconomy.EasyEconomy.EasyEconomyInitialized;
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.MOD_INIT_NOT_READY;
+import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.PrivateMessage;
 import static net.minecraft.commands.Commands.literal;
 
 public class BankCommand {
@@ -13,20 +16,24 @@ public class BankCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("balance")
                 .executes(ctx -> {
-                    CommandSourceStack source = ctx.getSource();
 
+                    CommandSourceStack source = ctx.getSource();
                     if (!(source.getEntity() instanceof ServerPlayer player)) {
                         EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
                         return 0;
                     }
 
-                    long bal = BankStorage.getBalance(player.getUUID());
-                    EasyEconomyMessages.PrivateMessage(
-                            player,
-                            String.format(EasyEconomyMessages.BANK_BALANCE, bal)
-                    );
-
-                    return 1;
+                    if (EasyEconomyInitialized) {
+                        long bal = BankStorage.getBalance(player.getUUID());
+                        EasyEconomyMessages.PrivateMessage(
+                                player,
+                                String.format(EasyEconomyMessages.BANK_BALANCE, bal)
+                        );
+                        return 1;
+                    } else {
+                        PrivateMessage(player, MOD_INIT_NOT_READY);
+                        return 0;
+                    }
                 })
         );
     }

@@ -2,11 +2,11 @@ package com.sumutiu.easyeconomy;
 
 import com.sumutiu.easyeconomy.commands.*;
 import com.sumutiu.easyeconomy.storage.BankStorage;
-import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import eu.pb4.placeholders.api.PlaceholderResult;
 import eu.pb4.placeholders.api.Placeholders;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -20,64 +20,78 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class EasyEconomy implements ModInitializer {
 
-	public static final File STORAGE_FOLDER = new File("mods/EasyEconomy/Banks");
-	public static final File AH_FOLDER = new File("mods/EasyEconomy/AH");
+	public static File STORAGE_FOLDER;
+	public static File AH_FOLDER;
+
+	public static volatile boolean EasyEconomyInitialized = false;
 
 	@Override
 	public void onInitialize() {
-		if (initPlugin()) {
 
-			// Register player balance placeholder
-			registerBalancePlaceholder();
+		// -----------------------------
+		// SERVER START (WORLD EXISTS)
+		// -----------------------------
+		ServerLifecycleEvents.SERVER_STARTED.register(server -> {
 
-			// Register commands
-			CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> {
-				DepositCommand.register(dispatcher);
-				WithdrawCommand.register(dispatcher);
-				BankCommand.register(dispatcher);
-				PayCommand.register(dispatcher);
-				AHCommand.register(dispatcher);
-			});
+			long seed = server.getWorldGenSettings().options().seed();
 
-			// Player join
-			ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> {
-                ServerPlayer player = handler.getPlayer();
-                UUID uuid = player.getUUID();
+			STORAGE_FOLDER = new File("mods/EasyEconomy_Seed_" + Long.toUnsignedString(seed) + "/Banks");
+			AH_FOLDER = new File("mods/EasyEconomy_Seed_" + Long.toUnsignedString(seed) + "/AH");
 
-                try {
-                    File playerFile = BankStorage.getPlayerFile(uuid);
-                    boolean isNewPlayer = !playerFile.exists();
+			if (initPlugin()) {
+				// Register player balance placeholder
+				registerBalancePlaceholder();
+				EasyEconomyInitialized = true;
+			} else {
+				Logger(2, MOD_INIT_FAILED);
+			}
+		});
 
-                    long balance = BankStorage.getBalance(uuid);
+		CommandRegistrationCallback.EVENT.register((dispatcher, _, _) -> {
+			DepositCommand.register(dispatcher);
+			WithdrawCommand.register(dispatcher);
+			BankCommand.register(dispatcher);
+			PayCommand.register(dispatcher);
+			AHCommand.register(dispatcher);
+		});
 
-                    if (isNewPlayer) {
-                        BankStorage.saveToFile(uuid, balance);
+		// Player join
+		ServerPlayConnectionEvents.JOIN.register((handler, _, _) -> {
+			ServerPlayer player = handler.getPlayer();
 
-                        EasyEconomyMessages.Logger(0,
-                                String.format(EasyEconomyMessages.BANK_FILE_CREATED_FOR_PLAYER, uuid));
+			if (!EasyEconomyInitialized) {
+				player.connection.disconnect(
+						Component.literal(AH_NOT_INITIALIZED)
+				);
+				return;
+			}
 
-                        EasyEconomyMessages.PrivateMessage(player,
-                                EasyEconomyMessages.BANK_WELCOME_NEW_PLAYER);
-                    }
+			UUID uuid = player.getUUID();
 
-                } catch (Exception e) {
-                    EasyEconomyMessages.Logger(2,
-                            String.format(EasyEconomyMessages.BANK_INIT_FAILED, uuid, e.getMessage()));
+			try {
+				File playerFile = BankStorage.getPlayerFile(uuid);
+				boolean isNewPlayer = !playerFile.exists();
 
-                    EasyEconomyMessages.PrivateMessage(player,
-                            EasyEconomyMessages.BANK_INIT_FAILED_PRIVATE);
-                }
+				long balance = BankStorage.getBalance(uuid);
 
-            });
+				if (isNewPlayer) {
+					BankStorage.saveToFile(uuid, balance);
+					Logger(0, String.format(BANK_FILE_CREATED_FOR_PLAYER, uuid));
+					PrivateMessage(player, BANK_WELCOME_NEW_PLAYER);
+				}
 
-			// Player quit
-			ServerPlayConnectionEvents.DISCONNECT.register((handler, _) ->
-					BankStorage.unloadPlayer(handler.getPlayer().getUUID())
-			);
+			} catch (Exception e) {
+				Logger(2, String.format(BANK_INIT_FAILED, uuid, e.getMessage()));
+				PrivateMessage(player, BANK_INIT_FAILED_PRIVATE);
+			}
+		});
 
-		} else {
-			Logger(2, MOD_INIT_FAILED);
-		}
+		// Player quit
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, _) -> {
+			if (EasyEconomyInitialized) {
+				BankStorage.unloadPlayer(handler.getPlayer().getUUID());
+			}
+		});
 	}
 
 	// Registers player balance placeholder

@@ -8,6 +8,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 
+import static com.sumutiu.easyeconomy.EasyEconomy.EasyEconomyInitialized;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
@@ -18,8 +19,20 @@ public class DepositCommand {
         dispatcher.register(literal("deposit")
                 .then(argument("amount", IntegerArgumentType.integer(1))
                         .executes(ctx -> {
-                            int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                            return execute(ctx.getSource(), amount);
+
+                            CommandSourceStack source = ctx.getSource();
+                            if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                Logger(1, PLAYER_ONLY_COMMAND);
+                                return 0;
+                            }
+
+                            if (EasyEconomyInitialized) {
+                                int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                return execute(ctx.getSource(), amount);
+                            } else {
+                                PrivateMessage(player, MOD_INIT_NOT_READY);
+                                return 0;
+                            }
                         })));
     }
 

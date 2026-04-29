@@ -116,6 +116,8 @@ public class EasyEconomyMessages {
     public static final String AH_LISTING_INFO = "Found %d active listings in %s.";
     public static final String AH_LISTING_EMPTY = "No active listings in %s.";
     public static final String AH_LISTING_ALL = "Total active listings found: %s.";
+    public static final String AH_NOT_INITIALIZED = "EasyEconomy mod is not initialized. Try again later.";
+    public static final String MOD_INIT_NOT_READY = "Mod has not initialized.";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Mod_ID);
 

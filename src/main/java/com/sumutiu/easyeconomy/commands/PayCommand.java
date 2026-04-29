@@ -4,11 +4,13 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.sumutiu.easyeconomy.storage.BankStorage;
+import com.sumutiu.easyeconomy.util.EasyEconomyMessages;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.server.level.ServerPlayer;
 
 import static com.mojang.brigadier.Command.SINGLE_SUCCESS;
+import static com.sumutiu.easyeconomy.EasyEconomy.EasyEconomyInitialized;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -19,8 +21,8 @@ public class PayCommand {
         dispatcher.register(literal("pay")
                 .then(argument("target", StringArgumentType.word())
                         .suggests((context, builder) -> {
-                            var server = context.getSource().getServer();
 
+                            var server = context.getSource().getServer();
                             return SharedSuggestionProvider.suggest(
                                     server.getPlayerNames(),
                                     builder
@@ -29,9 +31,21 @@ public class PayCommand {
                         })
                         .then(argument("amount", IntegerArgumentType.integer(1))
                                 .executes(ctx -> {
-                                    String targetName = StringArgumentType.getString(ctx, "target");
-                                    int amount = IntegerArgumentType.getInteger(ctx, "amount");
-                                    return execute(ctx.getSource(), targetName, amount);
+
+                                    CommandSourceStack source = ctx.getSource();
+                                    if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                        EasyEconomyMessages.Logger(1, EasyEconomyMessages.PLAYER_ONLY_COMMAND);
+                                        return 0;
+                                    }
+
+                                    if (EasyEconomyInitialized) {
+                                        String targetName = StringArgumentType.getString(ctx, "target");
+                                        int amount = IntegerArgumentType.getInteger(ctx, "amount");
+                                        return execute(ctx.getSource(), targetName, amount);
+                                    } else {
+                                        PrivateMessage(player, MOD_INIT_NOT_READY);
+                                        return 0;
+                                    }
                                 }))));
     }
 
