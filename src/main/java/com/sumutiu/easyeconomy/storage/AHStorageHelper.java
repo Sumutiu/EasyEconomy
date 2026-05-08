@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.sumutiu.easyeconomy.EasyEconomy.AH_FOLDER;
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
 public class AHStorageHelper {
@@ -88,17 +89,16 @@ public class AHStorageHelper {
      */
     public static List<AHStorage.AHListing> getAllActiveListings() {
         List<AHStorage.AHListing> all = new ArrayList<>();
-        File folder = new File("mods/EasyEconomy/AH");
 
-        if (!folder.exists()) {
-            Logger(1, String.format(AH_FOLDER_NOT_FOUND, folder.getPath()));
+        if (!AH_FOLDER.exists()) {
+            Logger(1, String.format(AH_FOLDER_NOT_FOUND, AH_FOLDER.getPath()));
             return all;
         }
 
-        File[] files = folder.listFiles((f) -> f.isFile() && f.getName().toLowerCase().endsWith(".json"));
+        File[] files = AH_FOLDER.listFiles((f) -> f.isFile() && f.getName().toLowerCase().endsWith(".json"));
 
         if (files == null) {
-            Logger(2, String.format(AH_FILE_ERROR, folder.getPath()));
+            Logger(2, String.format(AH_FILE_ERROR, AH_FOLDER.getPath()));
             return all;
         }
 
