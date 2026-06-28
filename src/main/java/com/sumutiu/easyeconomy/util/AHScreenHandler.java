@@ -253,18 +253,18 @@ public class AHScreenHandler extends AbstractContainerMenu {
     }
 
     private void drawConfirmationScreen() {
-        ItemStack blackPane = new ItemStack(Items.BLACK_STAINED_GLASS_PANE);
+        ItemStack blackPane = new ItemStack(Items.STAINED_GLASS_PANE.black());
         blackPane.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
 
         for (int i = 0; i < SIZE; i++) inventory.setItem(i, blackPane);
 
-        ItemStack greenPane = new ItemStack(Items.GREEN_STAINED_GLASS_PANE);
+        ItemStack greenPane = new ItemStack(Items.STAINED_GLASS_PANE.green());
         greenPane.set(DataComponents.CUSTOM_NAME, Component.literal("Confirm Purchase"));
 
-        ItemStack redPane = new ItemStack(Items.RED_STAINED_GLASS_PANE);
+        ItemStack redPane = new ItemStack(Items.STAINED_GLASS_PANE.red());
         redPane.set(DataComponents.CUSTOM_NAME, Component.literal("Cancel Purchase"));
 
-        ItemStack grayPane = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+        ItemStack grayPane = new ItemStack(Items.STAINED_GLASS_PANE.gray());
         grayPane.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
 
         for (int i = 0; i < 3; i++) {
