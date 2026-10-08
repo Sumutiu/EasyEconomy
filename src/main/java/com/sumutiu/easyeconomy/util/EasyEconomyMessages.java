@@ -39,6 +39,16 @@ public class EasyEconomyMessages {
     public static final String BANK_FILE_READ_FAILED_PLAYER = "Failed to load bank file for player %s. Error: %s.";
     public static final String BANK_FILE_WRITE_FAILED_PLAYER = "Failed to save bank file for player %s. Error: %s.";
     public static final String BANK_TEMP_RENAME_FAILED = "Failed to rename temp bank file for player %s. Error: %s.";
+    public static final String FILE_CORRUPT_BACKUP = "File %s could not be read and was moved to %s.";
+    public static final String FILE_CORRUPT_BACKUP_FAILED = "File %s could not be read and could not be moved aside. Error: %s.";
+
+    public static final String NAME_CACHE_LOAD_FAILED = "Failed to load name cache. Error: %s.";
+    public static final String NAME_CACHE_SAVE_FAILED = "Failed to save name cache. Error: %s.";
+
+    public static final String CONFIG_LOAD_FAILED = "Failed to read config file %s, using the default settings. Error: %s.";
+    public static final String CONFIG_SAVE_FAILED = "Failed to write config file %s. Error: %s.";
+    public static final String CONFIG_INVALID_VALUE = "Config value %s = %d is not valid, using %d instead.";
+    public static final String CONFIG_UNKNOWN_KEY = "Unknown setting '%s' in %s is ignored (check the spelling).";
 
     // ----------------------------
     // Bank - General
@@ -53,6 +63,10 @@ public class EasyEconomyMessages {
     public static final String BANK_DEPOSIT_FAILED = "Failed to deposit for player %s. Error: %s.";
     public static final String BANK_DEPOSIT_FAILED_PRIVATE = "An error occurred while depositing. Please contact an admin.";
     public static final String BANK_PAY_NEGATIVE = "The quantity must be positive.";
+
+    public static final String LEADERBOARD_HEADER = "--- Rich List (Top %d) ---";
+    public static final String LEADERBOARD_ENTRY = "#%d - %s: %d diamonds";
+    public static final String LEADERBOARD_EMPTY = "No players found.";
 
     // ----------------------------
     // Bank - Welcome / Notifications
@@ -69,7 +83,8 @@ public class EasyEconomyMessages {
     public static final String BANK_PAY_SUCCESS_RECEIVED = "You received %d diamonds from %s.";
     public static final String BANK_PAY_FAILED_INSUFFICIENT = "You do not have enough diamonds to pay %s. Your balance: %d.";
     public static final String BANK_PAY_FAILED_SELF = "You cannot pay yourself.";
-    public static final String BANK_PAY_FAILED_PLAYER_NOT_FOUND = "Player '%s' not found or not online.";
+    public static final String BANK_PAY_FAILED_PLAYER_NOT_FOUND = "Player '%s' not found. They must have joined this server at least once.";
+    public static final String BANK_PAY_TARGET_UNAVAILABLE = "The bank of %s can't be accessed right now. Try again later.";
     public static final String BANK_PAY_FAILED_ERROR = "An error occurred while processing your payment. Please contact an admin.";
 
     // ----------------------------
@@ -77,45 +92,67 @@ public class EasyEconomyMessages {
     // ----------------------------
     public static final String BANK_ADDED = "Added %d diamonds to player %s (new balance: %d).";
     public static final String BANK_REMOVED = "Removed %d diamonds from player %s (new balance: %d).";
+    public static final String BANK_SET = "Set balance of player %s to %d.";
 
     public static final String BANK_READ_FAILED = "Failed to read bank for player %s. Error: %s.";
-    public static final String BANK_READ_FAILED_PRIVATE = "An error occurred while reading your bank. Please contact an admin.";
+    public static final String BANK_READ_FAILED_PRIVATE = "Your bank can't be read right now. Try again later or contact an admin.";
+    public static final String BANK_UNREADABLE_SKIPPED = "Bank file of player %s could not be read and was left untouched.";
     public static final String BANK_WITHDRAW_FAILED = "Failed to withdraw for player %s. Error: %s.";
     public static final String BANK_WITHDRAW_FAILED_PRIVATE = "An error occurred while withdrawing. Please contact an admin.";
     public static final String PAY_FAILED_ERROR = "Failed to process payment from %s to %s. Error: %s.";
 
     // ----------------------------
-    // AH - General
+    // Shop - General
     // ----------------------------
-    public static final String AH_SELL_EMPTY = "You are not holding any item.";
-    public static final String AH_SELL_NO_PRICE = "Price must be greater than 0.";
-    public static final String AH_SELL_CONFIRMATION = "Listed %d of %s on AH for %d diamonds.";
-    public static final String AH_BUY_ERROR = "Could not retrieve item from listing.";
-    public static final String AH_BUY_CONFIRMATION= "Bought %d of %s for %d diamonds from %s.";
-    public static final String AH_WITHDRAW_ERROR = "Failed to withdraw balance. Try again.";
-    public static final String AH_BUY_NO_MONEY = "Not enough diamonds in your deposit to purchase this item.";
-    public static final String AH_BUY_NO_SPACE = "Not enough inventory space to purchase this item.";
-    public static final String AH_CLAIM_NO_SPACE = "Not enough inventory space to claim this item.";
-    public static final String AH_CLAIM_EXPIRED = "Claimed expired listing: %d of %s.";
-    public static final String AH_NO_ACTIVE_LISTING = "There are currently no active AH listings.";
+    public static final String SHOP_SELL_EMPTY = "You are not holding any item.";
+    public static final String SHOP_SELL_NO_PRICE = "Price must be greater than 0.";
+    public static final String SHOP_SELL_CONFIRMATION = "Listed %d of %s on the Shop for %d diamonds.";
+    public static final String SHOP_SELL_FAILED = "Could not save your listing, so your item was not taken. Please contact an admin.";
+    public static final String SHOP_SELL_LIMIT = "You already have %d listings (limit: %d). Use /shop cancel or /shop expired to take some back first.";
+    public static final String SHOP_BUY_CONFIRMATION = "Bought %d of %s for %d diamonds from %s.";
+    public static final String SHOP_BUY_EXPIRED = "This listing has expired and can no longer be bought.";
+    public static final String SHOP_BUY_NOT_AVAILABLE = "This listing is no longer available. Your diamonds have not been charged.";
+    public static final String SHOP_SELLER_BANK_UNAVAILABLE = "The seller's bank can't be accessed right now. Try again later.";
+    public static final String SHOP_ITEM_UNREADABLE = "This item's data could not be loaded, so it can't be bought or taken back. Please tell an admin.";
+    public static final String SHOP_WITHDRAW_ERROR = "Failed to withdraw balance. Try again.";
+    public static final String SHOP_BUY_NO_MONEY = "Not enough diamonds in your deposit to purchase this item.";
+    public static final String SHOP_BUY_NO_SPACE = "Not enough inventory space to purchase this item.";
+    public static final String SHOP_CLAIM_NO_SPACE = "Not enough inventory space to claim this item.";
+    public static final String SHOP_CLAIM_EXPIRED = "Claimed expired listing: %d of %s.";
+    public static final String SHOP_CLAIM_NOT_AVAILABLE = "This listing is no longer available.";
+    public static final String SHOP_TAKEN_BACK = "Took back your listing: %d of %s.";
+    public static final String SHOP_NO_ACTIVE_LISTING = "There are currently no active shop listings.";
+    public static final String SHOP_NO_EXPIRED_LISTING = "You have no expired shop listings.";
+    public static final String SHOP_NO_OWN_LISTING = "You have no active shop listings.";
+    public static final String SHOP_DATA_UNAVAILABLE = "Your shop listings can't be read right now. Try again later or contact an admin.";
+    public static final String SHOP_LIST_EMPTY_HAND = "You are not holding any item. Hold an item to search the shop.";
+    public static final String SHOP_LIST_NONE = "No listings found for this item.";
+
+    // ----------------------------
+    // Shop Admin
+    // ----------------------------
+    public static final String SHOPADMIN_SET_SUCCESS = "Set balance of %s to %d diamonds.";
+    public static final String SHOPADMIN_PLAYER_NOT_FOUND = "Player '%s' not found.";
+    public static final String SHOPADMIN_LIST_HEADER = "--- All Players (%d) ---";
+    public static final String SHOPADMIN_LIST_ENTRY = "%s: %d diamonds";
+    public static final String SHOPADMIN_LIST_EMPTY = "No players found.";
 
     // ----------------------------
     // AH - Logging / Errors
     // ----------------------------
-    public static final String AH_NO_FILE = "No file for player: %s.";
     public static final String AH_FILE_LOAD_ERROR = "Failed to load AH for %s. Error: %s.";
     public static final String AH_FILE_SAVE_ERROR = "Failed to save AH for %s. Error: %s.";
     public static final String AH_INVALID_ID = "Invalid item ID in listing: %s.";
     public static final String AH_ID_NOT_FOUND = "Item not found for ID: %s.";
     public static final String AH_ID_ITEMSTACK_ERROR = "Error converting listing to ItemStack: %s.";
-    public static final String AH_ID_NBT_ERROR = "Failed to parse item NBT: %s.";
+    public static final String AH_LISTING_UNREADABLE = "Item data of listing %d in AH file %s.json could not be read, so it is blocked from sale. Fix or remove it in that file. Error: %s.";
+    public static final String SHOP_PAYOUT_FAILED = "Could not pay %d diamonds to seller %s for a sold listing. Please add them manually.";
     public static final String AH_FILE_ERROR = "Could not list files in folder: %s.";
     public static final String AH_FOLDER_NOT_FOUND = "Folder not found: %s.";
     public static final String AH_FILE_NAME_ERROR = "Skipping file with unexpected name: %s.";
     public static final String AH_FILE_NAME_NO_UUID = "Skipping non-UUID file: %s.";
-    public static final String AH_LISTING_INFO = "Found %d active listings in %s.";
-    public static final String AH_LISTING_EMPTY = "No active listings in %s.";
-    public static final String AH_LISTING_ALL = "Total active listings found: %s.";
+    public static final String AH_LISTINGS_LOADED = "Loaded %d shop listings from %d files.";
+    public static final String AH_FILE_UNREADABLE_SKIPPED = "Shop file of player %s could not be read; those listings are hidden until it can be read (checked again when that player uses the Shop).";
     public static final String AH_NOT_INITIALIZED = "EasyEconomy mod is not initialized. Try again later.";
     public static final String MOD_INIT_NOT_READY = "Mod has not initialized.";
 

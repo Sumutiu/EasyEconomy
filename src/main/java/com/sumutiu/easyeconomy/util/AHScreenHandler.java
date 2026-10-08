@@ -3,6 +3,7 @@ package com.sumutiu.easyeconomy.util;
 import com.sumutiu.easyeconomy.storage.AHStorage;
 import com.sumutiu.easyeconomy.storage.AHStorageHelper;
 import com.sumutiu.easyeconomy.storage.BankStorage;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -29,21 +30,38 @@ public class AHScreenHandler extends AbstractContainerMenu {
     public static final int SIZE = ROWS * COLUMNS;
     public static final int ITEMS_PER_PAGE = 45;
 
-    private final Container inventory;
-    private final List<AHStorage.AHListing> listings;
-    private final Player player;
+    // Bottom row buttons
+    private static final int SLOT_PREVIOUS = 45;
+    private static final int SLOT_REFRESH = 48;
+    private static final int SLOT_PAGE_INFO = 49;
+    private static final int SLOT_NEXT = 53;
 
-    private boolean inConfirmation = false;
-    private int confirmSlot = -1;
+    // Clicks on the confirmation screen are ignored for this long after it opens,
+    // so a fast double-click on a listing can't buy it by accident
+    private static final long CONFIRM_CLICK_DELAY_MS = 300;
+
+    // Don't let Refresh be spammed (e.g. by holding a key over it)
+    private static final long REFRESH_COOLDOWN_MS = 1000;
+
+    private final Container inventory;
+    private List<AHStorage.AHListing> listings;
+    private final Player player;
+    private final String filterItemId; // null = show every listing
+
+    private AHStorage.AHListing selectedListing = null; // listing shown on the confirmation screen
+    private int confirmationOriginSlot = -1; // slot that was clicked to open the confirmation screen
+    private long confirmationOpenedAt = 0;
+    private long lastRefreshAt = 0;
     private int currentPage = 0;
 
-    public AHScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> listings, Player player) {
+    public AHScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> listings, Player player, String filterItemId) {
         super(MenuType.GENERIC_9x6, syncId);
         this.inventory = inventory;
         this.listings = listings;
         this.player = player;
+        this.filterItemId = filterItemId;
 
-        // ---------------- Auction House Slots ----------------
+        // ---------------- Shop Slots ----------------
         for (int i = 0; i < SIZE; i++) {
             this.addSlot(new ClickableSlot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
                 @Override
@@ -81,103 +99,223 @@ public class AHScreenHandler extends AbstractContainerMenu {
         drawListings();
     }
 
+    // ---------------- FILTER ----------------
+    private List<AHStorage.AHListing> getVisibleListings() {
+        if (filterItemId == null) return listings;
+
+        List<AHStorage.AHListing> filtered = new ArrayList<>();
+        for (AHStorage.AHListing l : listings) {
+            if (filterItemId.equals(l.itemId)) {
+                filtered.add(l);
+            }
+        }
+        return filtered;
+    }
+
+    private int getMaxPage(List<AHStorage.AHListing> visible) {
+        return visible.isEmpty() ? 0 : (visible.size() - 1) / ITEMS_PER_PAGE;
+    }
+
     // ---------------- CLICK HANDLER ----------------
     private void handleListingClick(Player player, int slotIndex) {
-        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
 
         // ---- Confirmation Screen ----
-        if (inConfirmation) {
+        if (selectedListing != null) {
+            if (System.currentTimeMillis() - confirmationOpenedAt < CONFIRM_CLICK_DELAY_MS) return;
+
+            // The slot under the cursor when the screen opened is not a button, so a
+            // double-click or a held key (Q, number keys) on a listing can't buy it
+            if (slotIndex == confirmationOriginSlot) return;
+
             if (isConfirmSlot(slotIndex)) {
-                buyListing(serverPlayer);
+                if (isOwnListing(selectedListing)) {
+                    takeBackListing(serverPlayer);
+                } else {
+                    buyListing(serverPlayer);
+                }
                 return;
             }
             if (isCancelSlot(slotIndex)) {
-                inConfirmation = false;
-                confirmSlot = -1;
+                selectedListing = null;
                 drawListings();
                 return;
             }
             return;
         }
 
+        List<AHStorage.AHListing> visible = getVisibleListings();
+
         // ---- Navigation ----
-        if (slotIndex == 45 && currentPage > 0) {
+        if (slotIndex == SLOT_PREVIOUS && currentPage > 0) {
             currentPage--;
             drawListings();
             return;
         }
 
-        if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < listings.size()) {
+        if (slotIndex == SLOT_NEXT && currentPage < getMaxPage(visible)) {
             currentPage++;
             drawListings();
             return;
         }
 
+        if (slotIndex == SLOT_REFRESH) {
+            refreshListings();
+            return;
+        }
+
         // ---- Listing Click ----
         int listingIndex = currentPage * ITEMS_PER_PAGE + slotIndex;
-        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < listings.size()) {
-            inConfirmation = true;
-            confirmSlot = listingIndex;
+        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < visible.size()) {
+            AHStorage.AHListing clicked = visible.get(listingIndex);
+
+            // Listings whose item data can't be read are blocked from sale
+            if (AHStorageHelper.fromListing(clicked, serverPlayer.registryAccess()).isEmpty()) {
+                PrivateMessage(serverPlayer, SHOP_ITEM_UNREADABLE);
+                return;
+            }
+
+            selectedListing = clicked;
+            confirmationOriginSlot = slotIndex;
+            confirmationOpenedAt = System.currentTimeMillis();
             drawConfirmationScreen();
         }
     }
 
-    private void buyListing(net.minecraft.server.level.ServerPlayer serverPlayer) {
-        inConfirmation = false;
+    private void refreshListings() {
+        long now = System.currentTimeMillis();
+        if (now - lastRefreshAt < REFRESH_COOLDOWN_MS) return;
+        lastRefreshAt = now;
 
-        AHStorage.AHListing listing = listings.get(confirmSlot);
-        ItemStack purchased = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
-
-        if (purchased == null || purchased.isEmpty()) {
-            PrivateMessage(serverPlayer, AH_BUY_ERROR);
-            drawListings();
-            confirmSlot = -1;
-            return;
-        }
-
-        if (InventoryUtil.noInventorySpace(serverPlayer, purchased)) {
-            PrivateMessage(serverPlayer, AH_BUY_NO_SPACE);
-            drawListings();
-            confirmSlot = -1;
-            return;
-        }
-
-        long balance = BankStorage.getBalance(serverPlayer.getUUID());
-        if (balance < listing.price) {
-            PrivateMessage(serverPlayer, AH_BUY_NO_MONEY);
-            drawListings();
-            confirmSlot = -1;
-            return;
-        }
-
-        if (!BankStorage.removeBalance(serverPlayer.getUUID(), listing.price)) {
-            PrivateMessage(serverPlayer, AH_WITHDRAW_ERROR);
-            drawListings();
-            confirmSlot = -1;
-            return;
-        }
-
-        BankStorage.addBalance(listing.seller, listing.price);
-
-        ItemStack purchasedCopy = purchased.copy();
-        if (!serverPlayer.getInventory().add(purchasedCopy)) {
-            serverPlayer.drop(purchasedCopy, false);
-        }
-
-        List<AHStorage.AHListing> sellerListings = AHStorage.loadListings(listing.seller);
-        sellerListings.removeIf(l -> l.timestamp == listing.timestamp && l.seller.equals(listing.seller));
-        AHStorage.saveListings(listing.seller, sellerListings);
-
-        listings.remove(confirmSlot);
-
-        PrivateMessage(serverPlayer, String.format(AH_BUY_CONFIRMATION,
-                purchased.getCount(),
-                purchased.getHoverName().getString(),
-                listing.price,
-                listing.sellerName));
-
-        confirmSlot = -1;
+        this.listings = AHStorageHelper.getAllActiveListings();
+        currentPage = 0;
         drawListings();
+    }
+
+    private void buyListing(ServerPlayer serverPlayer) {
+        AHStorage.AHListing listing = selectedListing;
+        selectedListing = null;
+
+        synchronized (AHStorage.getBuyLock()) {
+
+            // The menu may have been open for a while; expired listings belong to the seller again
+            if (listing.isExpired(System.currentTimeMillis())) {
+                PrivateMessage(serverPlayer, SHOP_BUY_EXPIRED);
+                listings.remove(listing);
+                drawListings();
+                return;
+            }
+
+            ItemStack purchased = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
+
+            if (purchased == null || purchased.isEmpty()) {
+                PrivateMessage(serverPlayer, SHOP_ITEM_UNREADABLE);
+                listings.remove(listing);
+                drawListings();
+                return;
+            }
+
+            if (InventoryUtil.noInventorySpace(serverPlayer, purchased)) {
+                PrivateMessage(serverPlayer, SHOP_BUY_NO_SPACE);
+                drawListings();
+                return;
+            }
+
+            Long balance = BankStorage.tryGetBalance(serverPlayer.getUUID());
+            if (balance == null) {
+                PrivateMessage(serverPlayer, BANK_READ_FAILED_PRIVATE);
+                drawListings();
+                return;
+            }
+
+            if (balance < listing.price) {
+                PrivateMessage(serverPlayer, SHOP_BUY_NO_MONEY);
+                drawListings();
+                return;
+            }
+
+            // Make sure the seller can be paid before anything changes
+            if (BankStorage.tryGetBalance(listing.seller) == null) {
+                PrivateMessage(serverPlayer, SHOP_SELLER_BANK_UNAVAILABLE);
+                drawListings();
+                return;
+            }
+
+            if (!BankStorage.removeBalance(serverPlayer.getUUID(), listing.price)) {
+                PrivateMessage(serverPlayer, SHOP_WITHDRAW_ERROR);
+                drawListings();
+                return;
+            }
+
+            // Remove the listing from the seller's file before handing out the item.
+            // If it is already gone (bought by someone else or reclaimed), refund and stop.
+            if (AHStorage.removeListing(listing.seller, listing.timestamp)) {
+                BankStorage.addBalance(serverPlayer.getUUID(), listing.price);
+                PrivateMessage(serverPlayer, SHOP_BUY_NOT_AVAILABLE);
+                listings.remove(listing);
+                drawListings();
+                return;
+            }
+
+            if (!BankStorage.addBalance(listing.seller, listing.price)) {
+                // Should not happen (checked above), but never lose the payout silently
+                Logger(2, String.format(SHOP_PAYOUT_FAILED, listing.price, listing.seller));
+            }
+
+            InventoryUtil.giveOrDrop(serverPlayer, purchased.copy());
+
+            listings.remove(listing);
+
+            PrivateMessage(serverPlayer, String.format(SHOP_BUY_CONFIRMATION,
+                    purchased.getCount(),
+                    purchased.getHoverName().getString(),
+                    listing.price,
+                    listing.sellerName));
+
+            drawListings();
+        }
+    }
+
+    // The player's own listing: take the item back instead of buying it
+    private void takeBackListing(ServerPlayer serverPlayer) {
+        AHStorage.AHListing listing = selectedListing;
+        selectedListing = null;
+
+        synchronized (AHStorage.getBuyLock()) {
+
+            ItemStack item = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
+
+            if (item.isEmpty()) {
+                PrivateMessage(serverPlayer, SHOP_ITEM_UNREADABLE);
+                drawListings();
+                return;
+            }
+
+            if (InventoryUtil.noInventorySpace(serverPlayer, item)) {
+                PrivateMessage(serverPlayer, SHOP_CLAIM_NO_SPACE);
+                drawListings();
+                return;
+            }
+
+            listings.remove(listing);
+
+            // Remove the listing before handing out the item; stop if someone just bought it
+            if (AHStorage.removeListing(listing.seller, listing.timestamp)) {
+                PrivateMessage(serverPlayer, SHOP_CLAIM_NOT_AVAILABLE);
+                drawListings();
+                return;
+            }
+
+            InventoryUtil.giveOrDrop(serverPlayer, item.copy());
+
+            PrivateMessage(serverPlayer, String.format(SHOP_TAKEN_BACK, item.getCount(), item.getHoverName().getString()));
+
+            drawListings();
+        }
+    }
+
+    private boolean isOwnListing(AHStorage.AHListing listing) {
+        return listing != null && player.getUUID().equals(listing.seller);
     }
 
     private boolean isConfirmSlot(int slotIndex) {
@@ -204,50 +342,69 @@ public class AHScreenHandler extends AbstractContainerMenu {
     private void drawListings() {
         for (int i = 0; i < SIZE; i++) inventory.setItem(i, ItemStack.EMPTY);
 
+        List<AHStorage.AHListing> visible = getVisibleListings();
+        int maxPage = getMaxPage(visible);
+
+        // Stay on a valid page after the last listing of the last page was bought
+        if (currentPage > maxPage) currentPage = maxPage;
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         int startIndex = currentPage * ITEMS_PER_PAGE;
 
         for (int i = 0; i < ITEMS_PER_PAGE; i++) {
             int listingIndex = startIndex + i;
-            if (listingIndex >= listings.size()) continue;
+            if (listingIndex >= visible.size()) continue;
 
-            AHStorage.AHListing listing = listings.get(listingIndex);
+            AHStorage.AHListing listing = visible.get(listingIndex);
             ItemStack stack = AHStorageHelper.fromListing(listing, player.registryAccess());
-            if (stack == null) stack = ItemStack.EMPTY;
 
             String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
             String date = sdf.format(new Date(listing.timestamp));
 
-            stack.set(DataComponents.CUSTOM_NAME, Component.literal(
-                    stack.getCount() + " x " + stack.getHoverName().getString()
-            ));
-
             List<Component> lore = new ArrayList<>();
+
+            // Never put a name/lore on the shared ItemStack.EMPTY; show a placeholder instead
+            if (stack == null || stack.isEmpty()) {
+                stack = new ItemStack(Items.BARRIER);
+                stack.set(DataComponents.CUSTOM_NAME, Component.literal("Unavailable item"));
+                lore.add(Component.literal("This item's data could not be loaded"));
+            } else {
+                stack.set(DataComponents.CUSTOM_NAME, Component.literal(
+                        stack.getCount() + " x " + stack.getHoverName().getString()
+                ));
+            }
+
             lore.add(Component.literal("Seller: " + sellerName));
             lore.add(Component.literal("Listed: " + date));
             lore.add(Component.literal("Price: " + listing.price + " diamonds"));
+            if (isOwnListing(listing)) {
+                lore.add(Component.literal("Your listing - click to take it back"));
+            }
 
             stack.set(DataComponents.LORE, new ItemLore(lore));
             inventory.setItem(i, stack);
         }
 
         // Navigation buttons
-        int maxPage = (listings.size() - 1) / ITEMS_PER_PAGE;
         if (currentPage > 0) {
             ItemStack prev = new ItemStack(Items.ARROW);
             prev.set(DataComponents.CUSTOM_NAME, Component.literal("Previous Page"));
-            inventory.setItem(45, prev);
+            inventory.setItem(SLOT_PREVIOUS, prev);
         }
         if (currentPage < maxPage) {
             ItemStack next = new ItemStack(Items.ARROW);
             next.set(DataComponents.CUSTOM_NAME, Component.literal("Next Page"));
-            inventory.setItem(53, next);
+            inventory.setItem(SLOT_NEXT, next);
         }
+
+        ItemStack refresh = new ItemStack(Items.EMERALD);
+        refresh.set(DataComponents.CUSTOM_NAME, Component.literal("Refresh"));
+        inventory.setItem(SLOT_REFRESH, refresh);
 
         ItemStack pageInfo = new ItemStack(Items.PAPER);
         pageInfo.set(DataComponents.CUSTOM_NAME,
                 Component.literal("Page " + (currentPage + 1) + " of " + (maxPage + 1)));
-        inventory.setItem(49, pageInfo);
+        inventory.setItem(SLOT_PAGE_INFO, pageInfo);
 
         broadcastChanges();
     }
@@ -258,11 +415,13 @@ public class AHScreenHandler extends AbstractContainerMenu {
 
         for (int i = 0; i < SIZE; i++) inventory.setItem(i, blackPane);
 
+        boolean ownListing = isOwnListing(selectedListing);
+
         ItemStack greenPane = new ItemStack(Items.STAINED_GLASS_PANE.green());
-        greenPane.set(DataComponents.CUSTOM_NAME, Component.literal("Confirm Purchase"));
+        greenPane.set(DataComponents.CUSTOM_NAME, Component.literal(ownListing ? "Take Back Item" : "Confirm Purchase"));
 
         ItemStack redPane = new ItemStack(Items.STAINED_GLASS_PANE.red());
-        redPane.set(DataComponents.CUSTOM_NAME, Component.literal("Cancel Purchase"));
+        redPane.set(DataComponents.CUSTOM_NAME, Component.literal(ownListing ? "Keep It Listed" : "Cancel Purchase"));
 
         ItemStack grayPane = new ItemStack(Items.STAINED_GLASS_PANE.gray());
         grayPane.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
@@ -275,8 +434,10 @@ public class AHScreenHandler extends AbstractContainerMenu {
             }
         }
 
-        AHStorage.AHListing listing = listings.get(confirmSlot);
-        inventory.setItem(22, AHStorageHelper.fromListing(listing, player.registryAccess()));
+        inventory.setItem(22, AHStorageHelper.fromListing(selectedListing, player.registryAccess()));
+
+        // Make the slot that was just clicked a plain filler (see handleListingClick)
+        if (confirmationOriginSlot != 22) inventory.setItem(confirmationOriginSlot, blackPane);
 
         broadcastChanges();
     }

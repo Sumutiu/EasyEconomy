@@ -2,6 +2,7 @@ package com.sumutiu.easyeconomy.util;
 
 import com.sumutiu.easyeconomy.storage.AHStorage;
 import com.sumutiu.easyeconomy.storage.AHStorageHelper;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
@@ -21,7 +22,16 @@ import java.util.List;
 
 import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 
-public class AHExpiredScreenHandler extends AbstractContainerMenu {
+/**
+ * Shows the player's own listings (/shop cancel = still for sale, /shop expired = expired).
+ * Clicking a listing takes the item back.
+ */
+public class AHOwnListingsScreenHandler extends AbstractContainerMenu {
+
+    public enum Mode {
+        ACTIVE,
+        EXPIRED
+    }
 
     public static final int ROWS = 6;
     public static final int COLUMNS = 9;
@@ -29,17 +39,19 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
     public static final int ITEMS_PER_PAGE = 45;
 
     private final Container inventory;
-    private final List<AHStorage.AHListing> expiredListings;
+    private final List<AHStorage.AHListing> ownListings;
     private final Player player;
+    private final Mode mode;
     private int currentPage = 0;
 
-    public AHExpiredScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> expiredListings, Player player) {
+    public AHOwnListingsScreenHandler(int syncId, Container inventory, List<AHStorage.AHListing> ownListings, Player player, Mode mode) {
         super(MenuType.GENERIC_9x6, syncId);
         this.inventory = inventory;
-        this.expiredListings = expiredListings;
+        this.ownListings = ownListings;
         this.player = player;
+        this.mode = mode;
 
-        // Auction house slots with click handling
+        // Listing slots with click handling
         for (int i = 0; i < SIZE; i++) {
             this.addSlot(new ClickableSlot(inventory, i, 8 + (i % COLUMNS) * 18, 18 + (i / COLUMNS) * 18) {
                 @Override
@@ -66,7 +78,7 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
     }
 
     private void handleSlotClick(Player player, int slotIndex) {
-        if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)) return;
+        if (!(player instanceof ServerPlayer serverPlayer)) return;
 
         // ---- Pagination ----
         if (slotIndex == 45 && currentPage > 0) {
@@ -74,43 +86,45 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
             drawListings();
             return;
         }
-        if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < expiredListings.size()) {
+        if (slotIndex == 53 && (currentPage + 1) * ITEMS_PER_PAGE < ownListings.size()) {
             currentPage++;
             drawListings();
             return;
         }
 
-        // ---- Claim expired item ----
+        // ---- Take the item back ----
         int listingIndex = currentPage * ITEMS_PER_PAGE + slotIndex;
-        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < expiredListings.size()) {
-            AHStorage.AHListing listing = expiredListings.get(listingIndex);
+        if (slotIndex >= 0 && slotIndex < ITEMS_PER_PAGE && listingIndex < ownListings.size()) {
+            AHStorage.AHListing listing = ownListings.get(listingIndex);
             ItemStack stack = AHStorageHelper.fromListing(listing, serverPlayer.registryAccess());
 
             if (stack == null || stack.isEmpty()) {
-                PrivateMessage(serverPlayer, AH_BUY_ERROR);
+                PrivateMessage(serverPlayer, SHOP_ITEM_UNREADABLE);
                 drawListings();
                 return;
             }
 
             if (InventoryUtil.noInventorySpace(serverPlayer, stack)) {
-                PrivateMessage(serverPlayer, AH_CLAIM_NO_SPACE);
+                PrivateMessage(serverPlayer, SHOP_CLAIM_NO_SPACE);
                 drawListings();
                 return;
             }
 
-            ItemStack stackToInsert = stack.copy();
-            if (!serverPlayer.getInventory().add(stackToInsert)) {
-                serverPlayer.drop(stackToInsert, false);
+            ownListings.remove(listingIndex);
+
+            // Remove the listing before handing out the item.
+            // If it is already gone (e.g. someone bought it a moment ago), stop here.
+            if (AHStorage.removeListing(listing.seller, listing.timestamp)) {
+                PrivateMessage(serverPlayer, SHOP_CLAIM_NOT_AVAILABLE);
+                drawListings();
+                return;
             }
+
+            InventoryUtil.giveOrDrop(serverPlayer, stack.copy());
             this.broadcastChanges();
 
-            expiredListings.remove(listingIndex);
-
-            List<AHStorage.AHListing> allListings = AHStorage.loadListings(serverPlayer.getUUID());
-            allListings.removeIf(l -> l.timestamp == listing.timestamp && l.seller.equals(listing.seller));
-            AHStorage.saveListings(serverPlayer.getUUID(), allListings);
-
-            PrivateMessage(serverPlayer, String.format(AH_CLAIM_EXPIRED, stack.getCount(), stack.getHoverName().getString()));
+            String message = mode == Mode.EXPIRED ? SHOP_CLAIM_EXPIRED : SHOP_TAKEN_BACK;
+            PrivateMessage(serverPlayer, String.format(message, stack.getCount(), stack.getHoverName().getString()));
 
             drawListings();
         }
@@ -119,33 +133,47 @@ public class AHExpiredScreenHandler extends AbstractContainerMenu {
     private void drawListings() {
         for (int i = 0; i < SIZE; i++) inventory.setItem(i, ItemStack.EMPTY);
 
+        int maxPage = ownListings.isEmpty() ? 0 : (ownListings.size() - 1) / ITEMS_PER_PAGE;
+
+        // Stay on a valid page after the last listing of the last page was taken back
+        if (currentPage > maxPage) currentPage = maxPage;
+
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm");
         int startIndex = currentPage * ITEMS_PER_PAGE;
 
         for (int i = 0; i < ITEMS_PER_PAGE; i++) {
             int listingIndex = startIndex + i;
 
-            if (listingIndex < expiredListings.size()) {
-                AHStorage.AHListing listing = expiredListings.get(listingIndex);
+            if (listingIndex < ownListings.size()) {
+                AHStorage.AHListing listing = ownListings.get(listingIndex);
                 ItemStack stack = AHStorageHelper.fromListing(listing, player.registryAccess());
-                if (stack == null) stack = ItemStack.EMPTY;
-
-                String sellerName = listing.sellerName != null ? listing.sellerName : "Unknown";
-                String date = sdf.format(new Date(listing.timestamp));
-
-                stack.set(DataComponents.CUSTOM_NAME,
-                        Component.literal(stack.getCount() + " x " + stack.getHoverName().getString()));
 
                 List<Component> loreLines = new ArrayList<>();
-                loreLines.add(Component.literal("Seller: " + sellerName));
-                loreLines.add(Component.literal("Expired: " + date));
+                boolean readable = stack != null && !stack.isEmpty();
+
+                // Never put a name/lore on the shared ItemStack.EMPTY; show a placeholder instead
+                if (!readable) {
+                    stack = new ItemStack(Items.BARRIER);
+                    stack.set(DataComponents.CUSTOM_NAME, Component.literal("Unavailable item"));
+                    loreLines.add(Component.literal("This item's data could not be loaded"));
+                } else {
+                    stack.set(DataComponents.CUSTOM_NAME,
+                            Component.literal(stack.getCount() + " x " + stack.getHoverName().getString()));
+                }
+
+                loreLines.add(Component.literal("Price: " + listing.price + " diamonds"));
+                loreLines.add(Component.literal("Listed: " + sdf.format(new Date(listing.timestamp))));
+                if (mode == Mode.EXPIRED) {
+                    loreLines.add(Component.literal("Expired: " + sdf.format(new Date(listing.getExpiresAt()))));
+                } else {
+                    loreLines.add(Component.literal("Expires: " + sdf.format(new Date(listing.getExpiresAt()))));
+                }
+                loreLines.add(Component.literal(readable ? "Click to take back" : "Can't be taken back - please tell an admin"));
                 stack.set(DataComponents.LORE, new ItemLore(loreLines));
 
                 inventory.setItem(i, stack);
             }
         }
-
-        int maxPage = (expiredListings.size() - 1) / ITEMS_PER_PAGE;
 
         if (currentPage > 0) {
             ItemStack prevStack = new ItemStack(Items.ARROW);
