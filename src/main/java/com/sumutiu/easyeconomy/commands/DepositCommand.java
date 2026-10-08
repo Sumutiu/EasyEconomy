@@ -43,31 +43,46 @@ public class DepositCommand {
             return 0;
         }
 
-        int removed = 0;
+        // Count the diamonds first; they are only taken once the bank has been updated
+        int available = 0;
 
-        for (int i = 0; i < player.getInventory().getContainerSize() && removed < amount; i++) {
+        for (int i = 0; i < player.getInventory().getContainerSize() && available < amount; i++) {
             ItemStack stack = player.getInventory().getItem(i);
 
             if (stack.getItem() == Items.DIAMOND) {
-                int take = Math.min(stack.getCount(), amount - removed);
-                stack.shrink(take);
-                removed += take;
+                available += Math.min(stack.getCount(), amount - available);
             }
         }
 
-        if (removed <= 0) {
+        if (available <= 0) {
             PrivateMessage(player, INVENTORY_EMPTY);
             return 0;
         }
 
         try {
-            BankStorage.addBalance(player.getUUID(), removed);
-            PrivateMessage(player, String.format(BANK_DEPOSIT_QTY, removed));
+            if (!BankStorage.addBalance(player.getUUID(), available)) {
+                PrivateMessage(player, BANK_READ_FAILED_PRIVATE);
+                return 0;
+            }
         } catch (Exception e) {
             Logger(2, String.format(BANK_DEPOSIT_FAILED, player.getUUID(), e.getMessage()));
             PrivateMessage(player, BANK_DEPOSIT_FAILED_PRIVATE);
             return 0;
         }
+
+        int removed = 0;
+
+        for (int i = 0; i < player.getInventory().getContainerSize() && removed < available; i++) {
+            ItemStack stack = player.getInventory().getItem(i);
+
+            if (stack.getItem() == Items.DIAMOND) {
+                int take = Math.min(stack.getCount(), available - removed);
+                stack.shrink(take);
+                removed += take;
+            }
+        }
+
+        PrivateMessage(player, String.format(BANK_DEPOSIT_QTY, removed));
 
         return removed;
     }

@@ -3,7 +3,7 @@ plugins {
 	id 'maven-publish'
 }
 
-version = project.mod_version
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 base {
@@ -12,8 +12,8 @@ base {
 
 repositories {
 	maven {
-		url "https://maven.nucleoid.xyz/"
-		name "Nucleoid"
+		url = "https://maven.nucleoid.xyz/"
+		name = "Nucleoid"
 	}
 }
 
@@ -26,15 +26,17 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	implementation include("eu.pb4:placeholder-api:3.0.0-beta.2+26.1")
+	implementation include("eu.pb4:placeholder-api:${project.placeholder_api_version}")
 
 }
 
 processResources {
-	inputs.property "version", project.version
+	// Read the value now; the configuration cache can't use 'inputs' or 'project' inside the closure later
+	def modVersion = project.version.toString()
+	inputs.property "version", modVersion
 
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand "version": modVersion
 	}
 }
 
@@ -53,9 +55,10 @@ java {
 }
 
 jar {
-	inputs.property "archivesName", project.base.archivesName
+	def archivesName = project.property("archives_base_name").toString()
+	inputs.property "archivesName", archivesName
 
-	from("LICENSE") {
-		rename { "${it}_${inputs.properties.archivesName}"}
+	from("LICENSE.txt") {
+		rename { "LICENSE_${archivesName}.txt" }
 	}
 }

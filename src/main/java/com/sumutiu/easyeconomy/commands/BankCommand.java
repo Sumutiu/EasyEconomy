@@ -23,7 +23,12 @@ public class BankCommand {
                     }
 
                     if (EasyEconomyInitialized) {
-                        long bal = BankStorage.getBalance(player.getUUID());
+                        Long bal = BankStorage.tryGetBalance(player.getUUID());
+                        if (bal == null) {
+                            PrivateMessage(player, BANK_READ_FAILED_PRIVATE);
+                            return 0;
+                        }
+
                         EasyEconomyMessages.PrivateMessage(player, String.format(BANK_BALANCE, bal));
                         return 1;
                     } else {

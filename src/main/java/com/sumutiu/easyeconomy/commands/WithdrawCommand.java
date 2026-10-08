@@ -3,6 +3,7 @@ package com.sumutiu.easyeconomy.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.sumutiu.easyeconomy.storage.BankStorage;
+import com.sumutiu.easyeconomy.util.InventoryUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.commands.CommandSourceStack;
@@ -44,11 +45,9 @@ public class WithdrawCommand {
         }
 
         // Get player balance
-        long balance;
-        try {
-            balance = BankStorage.getBalance(player.getUUID());
-        } catch (Exception e) {
-            Logger(2, String.format(BANK_READ_FAILED, player.getUUID(), e.getMessage()));
+        Long balance = BankStorage.tryGetBalance(player.getUUID());
+        if (balance == null) {
+            Logger(2, String.format(BANK_READ_FAILED, player.getUUID(), "bank file could not be read"));
             PrivateMessage(player, BANK_READ_FAILED_PRIVATE);
             return 0;
         }
@@ -58,18 +57,8 @@ public class WithdrawCommand {
             return 0;
         }
 
-        // Compute available inventory space
-        int capacity = 0;
-
-        for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-            ItemStack s = player.getInventory().getItem(i);
-
-            if (s.isEmpty()) {
-                capacity += new ItemStack(Items.DIAMOND).getMaxStackSize();
-            } else if (s.getItem() == Items.DIAMOND) {
-                capacity += (s.getMaxStackSize() - s.getCount());
-            }
-        }
+        // Compute available inventory space (main inventory only; armor and offhand slots can't take the diamonds)
+        int capacity = InventoryUtil.getFreeSpaceFor(player, new ItemStack(Items.DIAMOND));
 
         if (capacity < amount) {
             PrivateMessage(player, String.format(BANK_BALANCE_NO_SPACE, amount));
@@ -98,11 +87,7 @@ public class WithdrawCommand {
 
             ItemStack stack = new ItemStack(Items.DIAMOND, take);
 
-            boolean added = player.getInventory().add(stack);
-
-            if (!added) {
-                player.drop(stack, false);
-            }
+            InventoryUtil.giveOrDrop(player, stack);
 
             remaining -= take;
         }

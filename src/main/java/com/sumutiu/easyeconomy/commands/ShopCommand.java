@@ -3,7 +3,9 @@ package com.sumutiu.easyeconomy.commands;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.sumutiu.easyeconomy.storage.AHStorage;
-import com.sumutiu.easyeconomy.util.AHExpiredScreenFactory;
+import com.sumutiu.easyeconomy.storage.AHStorageHelper;
+import com.sumutiu.easyeconomy.config.EasyEconomyConfig;
+import com.sumutiu.easyeconomy.util.AHOwnListingsScreenFactory;
 import com.sumutiu.easyeconomy.util.AHScreenFactory;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.nbt.NbtOps;
@@ -19,10 +21,10 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-public class AHCommand {
+public class ShopCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(literal("ah")
+        dispatcher.register(literal("shop")
                 .executes(ctx -> {
 
                     CommandSourceStack source = ctx.getSource();
@@ -59,6 +61,23 @@ public class AHCommand {
                                 })
                         )
                 )
+                .then(literal("list")
+                        .executes(ctx -> {
+
+                            CommandSourceStack source = ctx.getSource();
+                            if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                Logger(1, PLAYER_ONLY_COMMAND);
+                                return 0;
+                            }
+
+                            if (EasyEconomyInitialized) {
+                                return listItem(player);
+                            } else {
+                                PrivateMessage(player, MOD_INIT_NOT_READY);
+                                return 0;
+                            }
+                        })
+                )
                 .then(literal("expired")
                         .executes(ctx -> {
 
@@ -69,7 +88,25 @@ public class AHCommand {
                             }
 
                             if (EasyEconomyInitialized) {
-                                AHExpiredScreenFactory.open(player);
+                                AHOwnListingsScreenFactory.openExpired(player);
+                                return SINGLE_SUCCESS;
+                            } else {
+                                PrivateMessage(player, MOD_INIT_NOT_READY);
+                                return 0;
+                            }
+                        })
+                )
+                .then(literal("cancel")
+                        .executes(ctx -> {
+
+                            CommandSourceStack source = ctx.getSource();
+                            if (!(source.getEntity() instanceof ServerPlayer player)) {
+                                Logger(1, PLAYER_ONLY_COMMAND);
+                                return 0;
+                            }
+
+                            if (EasyEconomyInitialized) {
+                                AHOwnListingsScreenFactory.openActive(player);
                                 return SINGLE_SUCCESS;
                             } else {
                                 PrivateMessage(player, MOD_INIT_NOT_READY);
@@ -85,12 +122,12 @@ public class AHCommand {
         ItemStack held = player.getMainHandItem();
 
         if (held.isEmpty()) {
-            PrivateMessage(player, AH_SELL_EMPTY);
+            PrivateMessage(player, SHOP_SELL_EMPTY);
             return 0;
         }
 
         if (price <= 0) {
-            PrivateMessage(player, AH_SELL_NO_PRICE);
+            PrivateMessage(player, SHOP_SELL_NO_PRICE);
             return 0;
         }
 
@@ -100,7 +137,7 @@ public class AHCommand {
         String itemName = held.getHoverName().getString();
         String itemId = BuiltInRegistries.ITEM.getKey(held.getItem()).toString();
         RegistryOps<Tag> ops =
-                player.level().registryAccess().createSerializationContext(NbtOps.INSTANCE);
+                player.registryAccess().createSerializationContext(NbtOps.INSTANCE);
 
         Tag tag = ItemStack.CODEC.encodeStart(ops, held).getOrThrow();
 
@@ -115,14 +152,42 @@ public class AHCommand {
                 itemNbt
         );
 
-        var listings = AHStorage.loadListings(player.getUUID());
-        listings.add(listing);
-        AHStorage.saveListings(player.getUUID(), listings);
+        // Parse the seller's listings once, so ones with unreadable item data don't count toward the limit
+        for (AHStorage.AHListing own : AHStorage.getListings(player.getUUID())) {
+            AHStorageHelper.fromListing(own, player.registryAccess());
+        }
+
+        AHStorage.AddResult result = AHStorage.addListing(player.getUUID(), listing);
+
+        if (result == AHStorage.AddResult.LIMIT_REACHED) {
+            int count = AHStorage.countListingsForLimit(player.getUUID());
+            PrivateMessage(player, String.format(SHOP_SELL_LIMIT, count, EasyEconomyConfig.getMaxListingsPerPlayer()));
+            return 0;
+        }
+
+        if (result != AHStorage.AddResult.ADDED) {
+            PrivateMessage(player, SHOP_SELL_FAILED);
+            return 0;
+        }
 
         held.shrink(qty); // remove all items from hand
 
-        PrivateMessage(player, String.format(AH_SELL_CONFIRMATION, qty, itemName, price));
+        PrivateMessage(player, String.format(SHOP_SELL_CONFIRMATION, qty, itemName, price));
 
+        return SINGLE_SUCCESS;
+    }
+
+    // Opens the Shop filtered to the item the player is holding
+    private static int listItem(ServerPlayer player) {
+        ItemStack held = player.getMainHandItem();
+
+        if (held.isEmpty()) {
+            PrivateMessage(player, SHOP_LIST_EMPTY_HAND);
+            return 0;
+        }
+
+        String itemId = BuiltInRegistries.ITEM.getKey(held.getItem()).toString();
+        AHScreenFactory.open(player, itemId);
         return SINGLE_SUCCESS;
     }
 }
