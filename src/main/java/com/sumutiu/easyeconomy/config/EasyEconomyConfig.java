@@ -10,7 +10,6 @@ import com.sumutiu.easyeconomy.storage.StorageUtil;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,8 +47,9 @@ public class EasyEconomyConfig {
         boolean writeFile = true;
 
         if (Files.exists(path)) {
-            try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-                JsonElement root = JsonParser.parseReader(reader);
+            try {
+                String text = Files.readString(path, StandardCharsets.UTF_8);
+                JsonElement root = JsonParser.parseString(text);
                 if (!root.isJsonObject()) throw new JsonParseException("not a JSON object");
 
                 JsonObject json = root.getAsJsonObject();
@@ -57,7 +57,9 @@ public class EasyEconomyConfig {
                     if (!KEYS.contains(key)) Logger(1, String.format(CONFIG_UNKNOWN_KEY, key, path));
                 }
 
-                loaded = GSON.fromJson(json, Values.class);
+                // Values come from the text, not the parsed tree: reading from the tree
+                // silently turns 5.5 into 5 instead of reporting an error
+                loaded = GSON.fromJson(text, Values.class);
                 if (loaded == null) loaded = new Values();
 
                 // Only rewrite an existing file to add keys it is missing
