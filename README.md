@@ -1,6 +1,6 @@
 # 💎 EasyEconomy – Because emeralds are overrated!
 
-**EasyEconomy** is a lightweight and fully server-side **Fabric** mod that brings a simple, diamond-based economy to your Minecraft world.  
+**EasyEconomy** is a lightweight and fully server-side mod for **Fabric** and **NeoForge** that brings a simple, diamond-based economy to your Minecraft world.  
 Deposit, withdraw, trade, and run your own shop — all powered by the sparkle of diamonds.  
 
 Perfect for survival servers, SMPs, and economy-driven communities.
@@ -66,8 +66,31 @@ Changes take effect after a server restart. Invalid values fall back to the defa
 
 ## 🧩 Requirements
 
+**Fabric**
 - [Fabric Loader](https://fabricmc.net/use/)  
 - [Fabric API](https://modrinth.com/mod/fabric-api)  
+
+**NeoForge**
+- [NeoForge](https://neoforged.net/) (nothing else needed)  
+
+The `%easyeconomy:balance%` placeholder works on both: the Fabric jar includes [Placeholder API](https://modrinth.com/mod/placeholder-api), and the NeoForge jar includes [Placeholder API NeoForge](https://modrinth.com/mod/placeholder-api-neoforge).  
+
+---
+
+## 🛠️ Building
+
+The project builds both loaders from one shared codebase:
+
+- `common/` – the mod itself (bank, shop, commands, config, storage), plain Minecraft code  
+- `fabric/` – the Fabric entrypoint, `fabric.mod.json` and the balance placeholder  
+- `neoforge/` – the NeoForge entrypoint, `neoforge.mods.toml` and the balance placeholder  
+
+Run `gradlew build` (Java 25). The jars are created in:
+
+- `fabric/build/libs/easyeconomy-fabric-<version>.jar`  
+- `neoforge/build/libs/easyeconomy-neoforge-<version>.jar`  
+
+Versions (Minecraft, Fabric, NeoForge) are all set in `gradle.properties`.  
 
 ---
 

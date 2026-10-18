@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "${neoforge_loader_version_range}"
+license = "AGPL-3.0"
+
+[[mods]]
+modId = "easyeconomy"
+version = "${version}"
+displayName = "EasyEconomy"
+authors = "Sumutiu"
+# Square icon shown in the mod list (a path from the root of the jar)
+iconFile = "assets/easyeconomy/icon.png"
+description = '''A simple economy mod for NeoForge.'''
+
+[[dependencies.easyeconomy]]
+modId = "neoforge"
+type = "required"
+versionRange = "[${neoforge_version},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.easyeconomy]]
+modId = "minecraft"
+type = "required"
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

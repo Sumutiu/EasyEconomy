@@ -12,13 +12,13 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.sumutiu.easyeconomy.EasyEconomy"
+			"com.sumutiu.easyeconomy.fabric.EasyEconomyFabric"
 		]
 	},
 	"depends": {
-		"fabricloader": ">=0.19.5",
-		"minecraft": "~26.3",
-		"java": ">=25",
+		"fabricloader": ">=${loader_version}",
+		"minecraft": "~${minecraft_version}",
+		"java": ">=${java_version}",
 		"fabric-api": "*"
 	}
 }

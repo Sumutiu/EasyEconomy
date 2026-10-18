@@ -1,0 +1,63 @@
+import net.fabricmc.loom.configuration.ide.RunConfigSettings
+
+plugins {
+    id 'multiloader-loader'
+    id 'net.fabricmc.fabric-loom'
+}
+
+repositories {
+    maven {
+        url = "https://maven.nucleoid.xyz/"
+        name = "Nucleoid"
+    }
+}
+
+dependencies {
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+
+    implementation "net.fabricmc:fabric-loader:${loader_version}"
+
+    // Fabric API. This is technically optional, but you probably want it anyway.
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+
+    // Placeholder API for the %easyeconomy:balance% placeholder, bundled inside the Fabric jar
+    implementation include("eu.pb4:placeholder-api:${placeholder_api_version}")
+}
+
+loom {
+    runs {
+        // Each run is passed in as "run" so IntelliJ knows its type and doesn't warn
+        // ("Cannot assign 'String' to 'T'" with displayName = ...)
+        configureEach { RunConfigSettings run ->
+            // Loom only makes IntelliJ run configurations for the root project, unless told to
+            run.generateRunConfig.set(true)
+            run.appendProjectPathToDisplayName.set(false)
+        }
+        client { RunConfigSettings run ->
+            run.displayName.set('Fabric Client')
+        }
+        server { RunConfigSettings run ->
+            run.displayName.set('Fabric Server')
+        }
+    }
+}
+
+// Marks this project as "fabric" so Loom and ModDevGradle pick the right variants
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+['apiElements', 'runtimeElements', 'sourcesElements', 'includeInternal', 'modCompileClasspath'].each { variant ->
+    configurations.named(variant) {
+        attributes {
+            attribute(loaderAttribute, 'fabric')
+        }
+    }
+}
+sourceSets.configureEach {
+    [it.compileClasspathConfigurationName, it.runtimeClasspathConfigurationName].each { variant ->
+        configurations.named(variant) {
+            attributes {
+                attribute(loaderAttribute, 'fabric')
+            }
+        }
+    }
+}

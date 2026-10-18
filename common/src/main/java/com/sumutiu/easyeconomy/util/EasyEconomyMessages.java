@@ -1,7 +1,5 @@
 package com.sumutiu.easyeconomy.util;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
@@ -186,14 +184,6 @@ public class EasyEconomyMessages {
     // ----------------------------
     // Helper Methods
     // ----------------------------
-    public static String getModVersion() {
-        return FabricLoader.getInstance()
-                .getModContainer("easyeconomy")
-                .map(ModContainer::getMetadata)
-                .map(meta -> meta.getVersion().getFriendlyString())
-                .orElse("unknown");
-    }
-
     public static boolean isConnected(ServerPlayer player) {
         return player != null && player.connection.getPlayer() == player;
     }
