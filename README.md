@@ -48,7 +48,7 @@ Perfect for survival servers, SMPs, and economy-driven communities.
 
 ## ⚙️ Configuration
 
-On first start, EasyEconomy creates `config/EasyEconomy.json`:
+On first start, EasyEconomy creates `config/EasyEconomy_Seed_<world seed>/EasyEconomy.json`:
 
 ```json
 {
