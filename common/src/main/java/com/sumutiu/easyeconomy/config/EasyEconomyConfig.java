@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.sumutiu.easyeconomy.EasyEconomy;
 import com.sumutiu.easyeconomy.storage.StorageUtil;
 
 import java.io.IOException;
@@ -24,8 +23,6 @@ import static com.sumutiu.easyeconomy.util.EasyEconomyMessages.*;
  */
 public class EasyEconomyConfig {
 
-    public static final String FILE_NAME = "EasyEconomy.json";
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     // Field names are the keys in the JSON file
@@ -41,8 +38,8 @@ public class EasyEconomyConfig {
 
     private static final Set<String> KEYS = Set.of("maxListingsPerPlayer", "listingDurationHours");
 
-    public static void load() {
-        Path path = EasyEconomy.getConfigDir().resolve(FILE_NAME);
+    public static void load(Path path) {
+
         Values loaded = new Values();
         boolean writeFile = true;
 

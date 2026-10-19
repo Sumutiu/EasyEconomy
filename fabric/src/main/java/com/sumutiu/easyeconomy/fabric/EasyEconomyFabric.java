@@ -19,8 +19,7 @@ public class EasyEconomyFabric implements ModInitializer {
         FabricLoader loader = FabricLoader.getInstance();
         EasyEconomy.init(loader.getModContainer(EasyEconomy.MOD_ID)
                         .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
-                        .orElse("unknown"),
-                loader.getConfigDir());
+                        .orElse("unknown"));
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             EasyEconomy.onServerStarted(server);

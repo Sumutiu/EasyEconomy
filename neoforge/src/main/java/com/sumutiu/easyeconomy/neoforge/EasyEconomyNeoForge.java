@@ -5,7 +5,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -21,7 +20,7 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 public class EasyEconomyNeoForge {
 
     public EasyEconomyNeoForge(ModContainer container) {
-        EasyEconomy.init(container.getModInfo().getVersion().toString(), FMLPaths.CONFIGDIR.get());
+        EasyEconomy.init(container.getModInfo().getVersion().toString());
 
         IEventBus events = NeoForge.EVENT_BUS;
 

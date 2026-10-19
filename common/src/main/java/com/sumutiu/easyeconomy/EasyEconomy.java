@@ -28,25 +28,20 @@ public class EasyEconomy {
 
     public static File STORAGE_FOLDER;
     public static File AH_FOLDER;
+    public static Path CONFIG_FOLDER;
+    public static Path CONFIG_FILE;
 
     public static volatile boolean EasyEconomyInitialized = false;
 
     private static String modVersion = "unknown";
-    private static Path configDir = Path.of("config");
 
     // Called by the loader entrypoint when the mod loads, with the mod version and the loader's config folder
-    public static void init(String version, Path loaderConfigDir) {
+    public static void init(String version) {
         modVersion = version;
-        configDir = loaderConfigDir;
     }
 
     public static String getModVersion() {
         return modVersion;
-    }
-
-    // The config folder of the loader (config/ in the game folder)
-    public static Path getConfigDir() {
-        return configDir;
     }
 
     // -----------------------------
@@ -58,8 +53,10 @@ public class EasyEconomy {
 
         STORAGE_FOLDER = new File("mods/EasyEconomy_Seed_" + Long.toUnsignedString(seed) + "/Banks");
         AH_FOLDER = new File("mods/EasyEconomy_Seed_" + Long.toUnsignedString(seed) + "/AH");
+        CONFIG_FOLDER = Path.of("config", "EasyEconomy_Seed_" + Long.toUnsignedString(seed));
+        CONFIG_FILE = CONFIG_FOLDER.resolve("EasyEconomy.json");
 
-        EasyEconomyConfig.load();
+        EasyEconomyConfig.load(CONFIG_FILE);
 
         if (initPlugin()) {
             NameCache.load();
