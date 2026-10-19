@@ -72,6 +72,8 @@ public class EasyEconomyConfig {
         if (writeFile) {
             // Creates the file on first start, or adds missing keys with their defaults
             try {
+                // The config folder is per world (EasyEconomy_Seed_<seed>), so it may not exist yet
+                Files.createDirectories(path.getParent());
                 StorageUtil.writeJsonAtomically(path.toFile(), loaded, GSON);
             } catch (IOException e) {
                 Logger(1, String.format(CONFIG_SAVE_FAILED, path, e.getMessage()));
